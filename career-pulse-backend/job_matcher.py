@@ -1,5 +1,3 @@
-import pandas as pd
-
 def calculate_match_score(job_description, job_title, user_skills):
     if not user_skills:
         return 0, []
@@ -13,14 +11,13 @@ def calculate_match_score(job_description, job_title, user_skills):
 
 def filter_and_sort_jobs(jobs_df, user_skills, min_score=20):
     if jobs_df.empty or not user_skills:
-        return pd.DataFrame()
-    scores = []
-    matched_skills_list = []
+        return []
+    results = []
     for _, job in jobs_df.iterrows():
         score, matched = calculate_match_score(job['description'], job['title'], user_skills)
-        scores.append(score)
-        matched_skills_list.append(matched)
-    jobs_df['match_score'] = scores
-    jobs_df['matched_skills'] = matched_skills_list
-    filtered = jobs_df[jobs_df['match_score'] >= min_score]
-    return filtered.sort_values('match_score', ascending=False).head(10)
+        if score >= min_score:
+            job_dict = job.to_dict()
+            job_dict['match_score'] = score
+            job_dict['matched_skills'] = matched
+            results.append(job_dict)
+    return sorted(results, key=lambda x: x['match_score'], reverse=True)[:15]
