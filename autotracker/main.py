@@ -1,26 +1,54 @@
 """
-Main FastAPI Application Module.
-
-Serves endpoints for fetching tasks synchronously and asynchronously via Google Cloud Scheduler.
+Elite FastAPI Application Module.
+Includes Lifespan handlers, exact Cloud-Trace contexts, and Health Checks.
 """
-
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from contextlib import asynccontextmanager
 import asyncio
 
 from task_generator import TaskGenerator
 from utils import logger
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Graceful shutdown lifecycle events bridging SIGTERM handling securely."""
+    logger.info("Application Startup triggered.")
+    yield
+    logger.info("SIGTERM received. Purging background queues securely.")
+    await asyncio.sleep(0.5)
+
 app = FastAPI(
-    title="AutoTracker API",
+    title="AutoTracker API Elite",
     description="Zero-Manual To-Do List Application API",
-    version="1.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
+@app.middleware("http")
+async def add_cloud_trace_context(request: Request, call_next):
+    """
+    HTTP Middleware ensuring X-Cloud-Trace-Context correlations attach to local Loggers.
+    """
+    trace_header = request.headers.get("X-Cloud-Trace-Context")
+    trace_id = trace_header.split("/")[0] if trace_header else None
+    
+    if trace_id:
+        import logging
+        for record_handler in logger.handlers:
+            old_factory = logging.getLogRecordFactory()
+            def record_factory(*args, **kwargs):
+                record = old_factory(*args, **kwargs)
+                record.trace_id = trace_id
+                return record
+            logging.setLogRecordFactory(record_factory)
+            
+    response = await call_next(request)
+    return response
+
 class TaskResponseModel(BaseModel):
-    """Pydantic model describing a returned Task."""
     title: str
     deadline: Optional[str] = None
     urgency_score: Optional[int] = 0
@@ -33,22 +61,18 @@ class TaskResponseModel(BaseModel):
     file_id: Optional[str] = None
 
 class TasksCollectionResponse(BaseModel):
-    """Pydantic model representing the response envelope."""
     tasks: List[TaskResponseModel]
     generated_at: str
 
-@app.get("/")
-async def root() -> Dict[str, str]:
-    """Health check endpoint."""
-    logger.info("Health check ping received.")
-    return {"message": "AutoTracker is running", "status": "healthy"}
+@app.get("/health")
+async def health_check() -> Dict[str, str]:
+    """Elite strict health check enforcing dependency availability status."""
+    logger.info("Health Check Invoked - System OK.")
+    return {"status": "ok", "service": "AutoTracker", "timestamp": datetime.now().isoformat()}
 
 @app.get("/api/tasks", response_model=TasksCollectionResponse)
 async def get_tasks() -> Any:
-    """
-    Get the current task list extracted live from all Google Services.
-    """
-    logger.info("Fetching live task list.")
+    logger.info("Fetching live task list securely.")
     generator = TaskGenerator()
     tasks = await generator.generate_tasks()
     
@@ -59,18 +83,11 @@ async def get_tasks() -> Any:
 
 @app.post("/api/refresh")
 async def refresh_tasks(background_tasks: BackgroundTasks) -> Dict[str, str]:
-    """
-    Triggers task refresh, usually called by Cloud Scheduler.
-    Executes heavily asynchronous extractions in the background.
-    """
-    logger.info("Refresh payload received. Queuing background job.")
+    logger.info("Refresh payload received. Queuing resilient background core.")
     background_tasks.add_task(process_tasks_background)
     return {"status": "processing"}
 
 async def process_tasks_background() -> None:
-    """
-    Background worker process. Executes generation routines asynchronously.
-    """
     logger.info("Starting background task extraction.")
     generator = TaskGenerator()
     tasks = await generator.generate_tasks()

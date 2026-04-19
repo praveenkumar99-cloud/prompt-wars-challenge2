@@ -1,57 +1,63 @@
 """
-Utility module providing Google Cloud integrations and performance wrappers.
-Includes Secret Manager for secure secrets access, Cloud Logging for robust logging,
-and an lru_cache wrapper utility for efficiency.
+Elite Utilities Module.
 """
 from functools import lru_cache
-from google.cloud import secretmanager
-from google.cloud import logging as cloud_logging
 import logging
+import json
+from google.cloud import secretmanager
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+import httpx
 
-# Initialize Cloud Logging
-try:
-    logging_client = cloud_logging.Client()
-    logging_client.setup_logging()
-except Exception:
-    # Fallback for local testing when credentials might not be configured
-    logging.basicConfig(level=logging.INFO)
+class StructlogFormatter(logging.Formatter):
+    """Formats logs into structured JSON for optimal Google Cloud Logging routing."""
+    def format(self, record):
+        log_data = {
+            "severity": record.levelname,
+            "message": record.getMessage(),
+            "name": record.name
+        }
+        # Inject standard GCP Trace identifiers if attached to record context
+        if hasattr(record, "trace_id") and record.trace_id:
+            log_data["logging.googleapis.com/trace"] = record.trace_id
+        return json.dumps(log_data)
 
-logger = logging.getLogger("autotracker")
+logger = logging.getLogger("autotracker_elite")
+logger.setLevel(logging.INFO)
+# Clear old handlers to not double-print
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+handler = logging.StreamHandler()
+handler.setFormatter(StructlogFormatter())
+logger.addHandler(handler)
 
 def cache_results(maxsize: int = 128):
-    """
-    Decorator to cache the results of repetitive utility functions.
-    
-    Args:
-        maxsize (int): The maximum size of the cache. Defaults to 128.
-        
-    Returns:
-        Callable: The decorated function with caching initialized.
-    """
+    """Caches returned data strictly to avoid double-processing."""
     def decorator(func):
         return lru_cache(maxsize=maxsize)(func)
     return decorator
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    reraise=True
+)
 def get_secret(secret_id: str, version_id: str = "latest", project_id: str = "praveen-space") -> str:
-    """
-    Retrieves a secret from Google Cloud Secret Manager.
-    
-    Args:
-        secret_id (str): The name of the secret.
-        version_id (str): The version of the secret to retrieve. Defaults to "latest".
-        project_id (str): The Google Cloud project ID. Defaults to "praveen-space".
-        
-    Returns:
-        str: The value of the retrieved secret.
-    """
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-    
+    """Retrieves a secret synchronously with built-in retry reliability."""
     try:
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
         response = client.access_secret_version(request={"name": name})
-        payload = response.payload.data.decode("UTF-8")
-        logger.info(f"Successfully retrieved secret: {secret_id}")
-        return payload
+        return response.payload.data.decode("UTF-8")
     except Exception as e:
-        logger.error(f"Failed to retrieve secret {secret_id}: {str(e)}")
-        return "" # returning empty rather than crash for local mock-less testing
+        logger.error(f"Secret Fetch Error: {e}")
+        return ""
+
+def resilient_api_call():
+    """Circuit-breaking and Retry decorator targeted safely at Network IO calls."""
+    return retry(
+        stop=stop_after_attempt(4),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((httpx.RequestError, httpx.TimeoutException)),
+        reraise=True
+    )

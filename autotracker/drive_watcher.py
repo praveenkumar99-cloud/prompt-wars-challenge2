@@ -1,65 +1,53 @@
 """
-Drive Watcher Module.
-
-This module monitors Google Drive for recently modified or shared files
-requiring attention.
+Drive Watcher Module - Elite Edition.
+Uses native httpx for REST logic and TypedDict mapping.
 """
-
-import asyncio
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TypedDict, Optional
 from datetime import datetime, timedelta
-from google.auth import default
-from googleapiclient.discovery import build
+import httpx
 
-from utils import logger, cache_results
+import google.auth
+import google.auth.transport.requests
+
+from utils import logger, cache_results, resilient_api_call
+
+class UserDict(TypedDict, total=False):
+    emailAddress: str
+
+class FileItem(TypedDict, total=False):
+    id: str
+    name: str
+    lastModifyingUser: UserDict
+
+class DriveResponse(TypedDict):
+    files: List[FileItem]
 
 class DriveWatcher:
-    """
-    Monitors Google Drive for files requiring attention.
-    """
-    
+    """Monitors Google Drive REST API."""
     def __init__(self) -> None:
-        """Initializes the Drive API client."""
-        logger.info("Initializing DriveWatcher")
-        credentials, project = default()
-        self.service = build('drive', 'v3', credentials=credentials)
+        logger.info("Initializing DriveWatcher REST")
+        credentials, _ = google.auth.default()
+        req = google.auth.transport.requests.Request()
+        credentials.refresh(req)
+        self.headers = {"Authorization": f"Bearer {credentials.token}"}
     
     @cache_results(maxsize=50)
     def _build_query(self, days_back: int) -> str:
-        """
-        Builds the search query for Drive API.
-        
-        Args:
-            days_back (int): The number of days to look back for formatting.
-            
-        Returns:
-            str: The raw Drive search query string.
-        """
         return f"modifiedTime > '{datetime.now() - timedelta(days=days_back)}'"
 
+    @resilient_api_call()
     async def fetch_recent_changes(self, days_back: int = 7) -> List[Dict[str, Any]]:
-        """
-        Fetch recently modified or shared files asynchronously.
-        
-        Args:
-            days_back (int): Number of days to look back for recent changes.
-            
-        Returns:
-            List[Dict[str, Any]]: A list of task dictionaries relating to Drive updates.
-        """
-        logger.info(f"Fetching recent drive changes for the last {days_back} days")
         query = self._build_query(days_back)
+        url = "https://www.googleapis.com/drive/v3/files"
+        params = {"q": query, "fields": "files(id,name,owners,lastModifyingUser)"}
         
-        try:
-            results = await asyncio.to_thread(
-                self.service.files().list(
-                    q=query, 
-                    fields="files(id, name, owners, lastModifyingUser)"
-                ).execute
-            )
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=self.headers, params=params, timeout=10.0)
+            response.raise_for_status()
+            data: DriveResponse = response.json()
             
             tasks = []
-            for file in results.get('files', []):
+            for file in data.get('files', []):
                 email_address = file.get('lastModifyingUser', {}).get('emailAddress')
                 if email_address and email_address != 'me':
                     tasks.append({
@@ -69,11 +57,6 @@ class DriveWatcher:
                         'effort_score': 20,
                         'category': "Work",
                         'source': 'drive',
-                        'file_id': file['id']
+                        'file_id': file.get('id')
                     })
-                    
-            logger.info(f"Extracted {len(tasks)} tasks from Drive.")
             return tasks
-        except Exception as e:
-            logger.error(f"Error fetching drive changes: {e}")
-            return []
