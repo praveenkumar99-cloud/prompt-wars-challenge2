@@ -67,7 +67,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-BACKEND_URL = st.secrets.get("BACKEND_URL", "https://career-pulse-backend-665822784067.us-central1.run.app")
+import os
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://career-pulse-backend-665822784067.us-central1.run.app")
 
 # Check backend health
 try:
