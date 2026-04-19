@@ -1,11 +1,10 @@
 """
-Drive Watcher Module - Elite Edition.
-Uses native httpx for REST logic and TypedDict mapping.
+Drive Watcher Module - Buildathon Edition.
+Uses native httpx for REST logic mapping properly to global application Client session.
 """
 from typing import List, Dict, Any, TypedDict, Optional
 from datetime import datetime, timedelta
 import httpx
-
 import google.auth
 import google.auth.transport.requests
 
@@ -24,8 +23,12 @@ class DriveResponse(TypedDict):
 
 class DriveWatcher:
     """Monitors Google Drive REST API."""
-    def __init__(self) -> None:
-        logger.info("Initializing DriveWatcher REST")
+    def __init__(self, client: httpx.AsyncClient) -> None:
+        self.client = client
+        self.headers = {}
+    
+    async def initialize(self) -> None:
+        logger.info("Initializing DriveWatcher bindings async.")
         credentials, _ = google.auth.default()
         req = google.auth.transport.requests.Request()
         credentials.refresh(req)
@@ -41,22 +44,21 @@ class DriveWatcher:
         url = "https://www.googleapis.com/drive/v3/files"
         params = {"q": query, "fields": "files(id,name,owners,lastModifyingUser)"}
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=self.headers, params=params, timeout=10.0)
-            response.raise_for_status()
-            data: DriveResponse = response.json()
-            
-            tasks = []
-            for file in data.get('files', []):
-                email_address = file.get('lastModifyingUser', {}).get('emailAddress')
-                if email_address and email_address != 'me':
-                    tasks.append({
-                        'title': f"Review changes in: {file.get('name', 'Untitled Document')}",
-                        'urgency_score': 50,
-                        'importance_score': 50,
-                        'effort_score': 20,
-                        'category': "Work",
-                        'source': 'drive',
-                        'file_id': file.get('id')
-                    })
-            return tasks
+        response = await self.client.get(url, headers=self.headers, params=params, timeout=10.0)
+        response.raise_for_status()
+        data: DriveResponse = response.json()
+        
+        tasks = []
+        for file in data.get('files', []):
+            email_address = file.get('lastModifyingUser', {}).get('emailAddress')
+            if email_address and email_address != 'me':
+                tasks.append({
+                    'title': f"Review changes in: {file.get('name', 'Untitled Document')}",
+                    'urgency_score': 50,
+                    'importance_score': 50,
+                    'effort_score': 20,
+                    'category': "Work",
+                    'source': 'drive',
+                    'file_id': file.get('id')
+                })
+        return tasks
