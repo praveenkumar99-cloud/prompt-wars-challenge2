@@ -1,3 +1,4 @@
+$env:PATH += ";C:\Users\konat_h9e4sxl\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin"
 gcloud config set project praveen-space
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
