@@ -10,7 +10,7 @@ import google.generativeai as genai
 import google.auth
 import google.auth.transport.requests
 
-from utils import logger, get_secret_async, cache_results, resilient_api_call, gemini_retry
+from utils import logger, get_secret, cache_results, resilient_api_call, gemini_retry
 
 class EmailTaskExtraction(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -43,7 +43,7 @@ class GmailWatcher:
         self.headers = {"Authorization": f"Bearer {credentials.token}"}
         
         try:
-            gemini_api_key = await get_secret_async("gemini-api-key")
+            gemini_api_key = get_secret("GEMINI_API_KEY")
             if gemini_api_key:
                 genai.configure(api_key=gemini_api_key)
         except Exception as e:
@@ -83,7 +83,10 @@ class GmailWatcher:
     async def _call_gemini(self, snippet: str) -> Dict[str, Any]:
         prompt = f"Analyze this snippet to JSON: {snippet}"
         try:
-            model = genai.GenerativeModel("gemini-1.5-pro")
+            # Model Routing based on token depth sizing
+            model_tier = "gemini-1.5-flash" if len(snippet) < 200 else "gemini-1.5-pro"
+            model = genai.GenerativeModel(model_tier)
+            
             response_ai = await model.generate_content_async(prompt)
             
             extracted = EmailTaskExtraction(

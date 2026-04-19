@@ -1,14 +1,14 @@
 """
-Elite Utilities Module - Buildathon Edition.
+Elite Utilities Module - Prompt War Buildathon Edition.
 """
 import json
 import logging
+import os
 from functools import lru_cache
 import httpx
 import contextvars
 
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
-from google.cloud import secretmanager_v1
 
 # Contextvars for trace and request binding
 request_id_ctx = contextvars.ContextVar("request_id", default="")
@@ -26,7 +26,6 @@ class StructlogFormatter(logging.Formatter):
             "latency_ms": latency_ctx.get(),
             "status_code": status_code_ctx.get()
         }
-        # Inject standard GCP Trace identifiers if attached to record context
         if hasattr(record, "trace_id") and record.trace_id:
             log_data["logging.googleapis.com/trace"] = record.trace_id
         return json.dumps(log_data)
@@ -47,21 +46,9 @@ def cache_results(maxsize: int = 128):
         return lru_cache(maxsize=maxsize)(func)
     return decorator
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=5),
-    reraise=True
-)
-async def get_secret_async(secret_id: str, version_id: str = "latest", project_id: str = "praveen-space") -> str:
-    """Retrieves a secret asynchronously using SecretManagerServiceAsyncClient."""
-    try:
-        client = secretmanager_v1.SecretManagerServiceAsyncClient()
-        name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-        response = await client.access_secret_version(request={"name": name})
-        return response.payload.data.decode("UTF-8")
-    except Exception as e:
-        logger.error(f"Secret Fetch Error: {e}")
-        return ""
+def get_secret(secret_id: str) -> str:
+    """Sanitized access. Reads strictly from env."""
+    return os.getenv(secret_id, "")
 
 def gemini_retry():
     """Specific exponential backoff targeting 429 and 500 equivalent server issues."""
