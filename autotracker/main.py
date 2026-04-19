@@ -64,6 +64,11 @@ class TasksCollectionResponse(BaseModel):
     tasks: List[TaskResponseModel]
     generated_at: str
 
+@app.get("/")
+async def root() -> Dict[str, str]:
+    """Root endpoint to verify the service is alive without 404s on the homepage."""
+    return {"message": "AutoTracker Elite is running", "status": "healthy"}
+
 @app.get("/health")
 async def health_check() -> Dict[str, str]:
     """Elite strict health check enforcing dependency availability status."""
