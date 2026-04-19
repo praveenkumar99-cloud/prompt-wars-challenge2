@@ -78,7 +78,7 @@ class TasksCollectionResponse(BaseModel):
 
 @app.get("/")
 async def root() -> Dict[str, str]:
-    return {"message": "AutoTracker Buildathon Edition running happily", "status": "healthy"}
+    return {"message": "AutoTracker running happily", "status": "healthy"}
 
 @app.get("/health")
 async def health_check() -> Dict[str, str]:
