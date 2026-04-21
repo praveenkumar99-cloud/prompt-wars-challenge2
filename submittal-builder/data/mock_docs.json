@@ -1,0 +1,10 @@
+{
+  "PWR-4000-XL": ["PWR-4000-XL_datasheet.pdf", "PWR-4000-XL_warranty.pdf", "PWR-4000-XL_compliance_CE_UL.pdf"],
+  "CTL-MOD-128": ["CTL-MOD-128_specification.pdf", "CTL-MOD-128_programming_guide.pdf", "CTL-MOD-128_warranty.pdf"],
+  "CBL-HARNESS-05": ["CBL-HARNESS-05_datasheet.pdf", "CBL-HARNESS-05_installation_guide.pdf"],
+  "SNS-TEMP-PT100": ["SNS-TEMP-PT100_datasheet.pdf", "SNS-TEMP-PT100_calibration_certificate.pdf"],
+  "RELAY-SAFE-24": ["RELAY-SAFE-24_datasheet.pdf", "RELAY-SAFE-24_compliance_SIL3.pdf"],
+  "FUSE-HOLDER-10A": ["FUSE-HOLDER-10A_datasheet.pdf"],
+  "DISP-LCD-7INCH": ["DISP-LCD-7INCH_specification.pdf", "DISP-LCD-7INCH_warranty.pdf", "DISP-LCD-7INCH_compliance.pdf"],
+  "MISSING-PART-XYZ": []
+}

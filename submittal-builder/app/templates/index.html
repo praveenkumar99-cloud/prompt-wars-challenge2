@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submittal Builder</title>
+</head>
+<body>
+    <h1>Submittal Builder</h1>
+    <p>Upload a BOM to generate your submittal document.</p>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="file" name="file" accept=".pdf,.txt,.csv">
+        <button type="submit">Upload</button>
+    </form>
+    <div id="status"></div>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('file').files[0]);
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Uploading...';
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.textContent = `Job ID: ${data.job_id}. Processing...`;
+                    pollStatus(data.job_id);
+                } else {
+                    statusDiv.innerHTML = `<span style="color:red">Error: ${data.detail || data.message}</span>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<span style="color:red">Error: ${error.message}</span>`;
+            }
+        });
+
+        async function pollStatus(jobId) {
+            const statusDiv = document.getElementById('status');
+            const interval = setInterval(async () => {
+                const response = await fetch(`/api/status/${jobId}`);
+                const data = await response.json();
+                
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    statusDiv.innerHTML = `Success! <a href="/api/download/${jobId}">Download Submittal</a>`;
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    statusDiv.innerHTML = `<span style="color:red">Processing failed: ${data.error_message}</span>`;
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
