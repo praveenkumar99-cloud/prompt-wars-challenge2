@@ -14,6 +14,13 @@ class Config:
     OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
     ALLOWED_EXTENSIONS = {".pdf", ".csv", ".txt"}
     
+    # GCP Settings
+    USE_GCP_SERVICES = os.getenv("USE_GCP_SERVICES", "false").lower() == "true"
+    GCP_PROJECT = os.getenv("GCP_PROJECT", "")
+    GCP_BUCKET_NAME = os.getenv("GCP_BUCKET_NAME", "")
+    GCP_FIRESTORE_COLLECTION = os.getenv("GCP_FIRESTORE_COLLECTION", "submittal_jobs")
+    GCP_VERTEX_SEARCH_DATASTORE = os.getenv("GCP_VERTEX_SEARCH_DATASTORE", "")
+    
     @classmethod
     def ensure_directories(cls):
         """Create required directories if they don't exist"""
