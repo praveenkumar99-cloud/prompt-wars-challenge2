@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Assistant - Your Guide to Voting</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗳️ Election Process Assistant</h1>
+            <p>Your guide to voter registration, deadlines, and more.</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="chat-section">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            Hello! I'm your Election Assistant. I can help you with voter registration, deadlines, voting locations, and required documents. What would you like to know?
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="text" id="user-input" class="chat-input" placeholder="Type your election question here..." onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="suggestions">
+                    <h3>Try Asking:</h3>
+                    <div id="suggestions-container">
+                        <button class="suggestion-btn" onclick="useSuggestion('How do I register to vote?')">How do I register to vote?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('What are the important election deadlines?')">What are the important election deadlines?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('When is the primary election?')">When is the primary election?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('How can I vote by mail?')">How can I vote by mail?</button>
+                    </div>
+                    <div class="sources" id="sources-container" style="display: none;">
+                        <strong>Sources Consulted:</strong>
+                        <ul id="sources-list" style="margin-top: 5px; margin-left: 20px;"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/script.js"></script>
+</body>
+</html>

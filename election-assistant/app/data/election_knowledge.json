@@ -1,0 +1,32 @@
+{
+  "registration": {
+    "description": "Voter registration is the process of signing up to vote in elections.",
+    "deadline": "Typically 15-30 days before Election Day",
+    "methods": ["Online", "By mail", "In-person at DMV or election office"],
+    "requirements": ["US citizen", "State resident", "18 years old by Election Day"],
+    "how_to_check": "Visit your state's election website or use national voter registration portal"
+  },
+  "important_dates_2024": [
+    {"event": "Primary Elections", "date_range": "March - September 2024", "description": "Vote for party nominees"},
+    {"event": "Voter Registration Deadline", "date": "October 2024 (varies by state)", "description": "Last day to register"},
+    {"event": "Early Voting", "date_range": "October - November 2024", "description": "Vote before Election Day"},
+    {"event": "General Election", "date": "November 5, 2024", "description": "Final election day"},
+    {"event": "Mail Ballot Request Deadline", "date": "October 2024", "description": "Last day to request absentee ballot"}
+  ],
+  "voting_methods": {
+    "in_person_early": "Vote at designated early voting locations before Election Day",
+    "in_person_election_day": "Vote at your assigned polling place on Election Day",
+    "vote_by_mail": "Receive ballot by mail and return via postal service or drop box",
+    "absentee_ballot": "For voters who cannot vote in person on Election Day"
+  },
+  "required_documents": {
+    "most_states": "Non-photo ID like utility bill or bank statement (varies by state)",
+    "some_states": "Government-issued photo ID (driver's license, passport, state ID)",
+    "first_time_voters": "May need additional proof of residency"
+  },
+  "polling_place_info": {
+    "where_to_find": "Check your voter registration card, state election website, or local election office",
+    "hours": "Typically 7 AM - 7 PM (varies by state)",
+    "wait_times": "Early morning and evening tend to be busiest"
+  }
+}
