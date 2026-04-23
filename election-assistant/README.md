@@ -44,6 +44,57 @@ uvicorn app.main:app --reload --port 8000
 pytest tests/ -v
 ```
 
+## Deployment to Google Cloud Run
+
+### Prerequisites
+- Google Cloud SDK installed and authenticated (`gcloud auth login`)
+- Docker installed
+- A Google Cloud Project with billing enabled
+
+### Deployment Steps
+1. Set your Google Cloud Project ID:
+   ```bash
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+
+2. Enable required APIs:
+   ```bash
+   gcloud services enable run.googleapis.com containerregistry.googleapis.com
+   ```
+
+3. Run the deployment script:
+   ```powershell
+   .\deploy.ps1 -ProjectId YOUR_PROJECT_ID -GoogleApiKey YOUR_GEMINI_API_KEY
+   ```
+   Or with custom service name and region:
+   ```powershell
+   .\deploy.ps1 -ProjectId YOUR_PROJECT_ID -GoogleApiKey YOUR_GEMINI_API_KEY -ServiceName my-election-assistant -Region us-west1
+   ```
+
+   The deployment uses **gemini-pro** as the default model for optimal cost and performance.
+
+4. The script will:
+   - Build the Docker image
+   - Push to Google Container Registry
+   - Deploy to Cloud Run
+   - Display the service URL
+
+### Manual Deployment (Alternative)
+If you prefer manual steps:
+```bash
+# Build and push image
+docker build -t gcr.io/YOUR_PROJECT_ID/election-assistant .
+docker push gcr.io/YOUR_PROJECT_ID/election-assistant
+
+# Deploy to Cloud Run
+gcloud run deploy election-assistant \
+  --image gcr.io/YOUR_PROJECT_ID/election-assistant \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 8080
+```
+
 ### API Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
