@@ -3,5 +3,14 @@ steps:
     args: ['build', '-t', 'gcr.io/praveen-space/election-assistant', '.']
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/praveen-space/election-assistant']
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'election-assistant'
+      - '--image=gcr.io/praveen-space/election-assistant'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
 images:
   - 'gcr.io/praveen-space/election-assistant'

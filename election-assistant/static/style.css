@@ -303,3 +303,29 @@ body {
         max-width: 88%;
     }
 }
+
+.suggestion-btn:focus-visible,
+.send-btn:focus-visible,
+.chat-input:focus-visible {
+    outline: 2px solid #1a73e8;
+    outline-offset: 2px;
+}
+
+.skip-link:focus {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 9999;
+    background: #1a73e8;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+    .send-btn, .suggestion-btn {
+        border: 2px solid ButtonText;
+    }
+}
