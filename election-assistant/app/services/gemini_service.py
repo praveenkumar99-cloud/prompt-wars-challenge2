@@ -42,11 +42,12 @@ class GeminiService:
                 raise
         return self._client
 
-    def understand_intent(self, message: str) -> Tuple[str, float]:
+    def understand_intent(self, message: str, context: str = "") -> Tuple[str, float]:
         """Classify user intent from message using Gemini.
 
         Args:
             message: User's question text.
+            context: Previous conversation context.
 
         Returns:
             Tuple of (intent_category, confidence_score).
@@ -65,6 +66,7 @@ class GeminiService:
         - candidates: Questions about candidates or ballot measures
         - general: Other election-related questions
 
+        Conversation Context: {context}
         Message: "{message}"
 
         Output ONLY JSON: {{"intent": "category", "confidence": 0.0-1.0}}
@@ -88,13 +90,14 @@ class GeminiService:
             logger.warning("Intent classification failed: %s", e)
             return "general", 0.5
 
-    def generate_response(self, message: str, intent: str, context: dict) -> str:
+    def generate_response(self, message: str, intent: str, context: dict, conversation_context: str = "") -> str:
         """Generate a helpful, non-partisan response.
 
         Args:
             message: User's original question.
             intent: Classified intent category.
             context: Relevant context information for the intent.
+            conversation_context: Previous conversation history.
 
         Returns:
             Generated response text, or fallback response on error.
@@ -104,6 +107,7 @@ class GeminiService:
         prompt = f"""
         You are a helpful, non-partisan election assistant. Provide clear, accurate information.
 
+        Conversation Context: {conversation_context}
         User Question: {message}
         Intent Category: {intent}
         Available Information: {json.dumps(context)}
@@ -114,6 +118,7 @@ class GeminiService:
         3. Suggest specific next steps
         4. Keep response conversational but informative
         5. Do not express political opinions
+        6. Use the conversation context to provide more specific, follow-up answers
 
         Generate a helpful response:
         """

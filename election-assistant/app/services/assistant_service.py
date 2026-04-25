@@ -105,7 +105,7 @@ class AssistantService:
             logger.debug("Using cached intent classification")
         else:
             try:
-                intent, confidence = await self.gemini_service.understand_intent(enhanced_message)
+                intent, confidence = self.intent_service.classify(enhanced_message, context)
                 # Cache the result
                 self.cache_service.set_intent_result(message_hash, intent, confidence)
             except Exception as e:
@@ -116,7 +116,7 @@ class AssistantService:
         logger.info("Intent: %s (confidence: %.2f)", intent, confidence)
 
         # Step 2: Get context for intent
-        context = self._get_context_for_intent(intent)
+        intent_context = self._get_context_for_intent(intent)
 
         # Step 3: Generate response (prefer Vertex AI if available)
         try:
@@ -124,17 +124,17 @@ class AssistantService:
                 logger.debug("Using Vertex AI for response generation")
                 response_text = (
                     self.vertex_ai_service.generate_response_advanced(
-                        enhanced_message, intent, context
+                        enhanced_message, intent, intent_context
                     )
                 )
             elif self.gemini_service.api_key:
                 logger.debug("Using Gemini for response generation")
                 response_text = self.gemini_service.generate_response(
-                    enhanced_message, intent, context
+                    enhanced_message, intent, intent_context, context
                 )
             else:
                 logger.debug("Using template response")
-                response_text = self._get_template_response(intent, context)
+                response_text = self._get_template_response(intent, intent_context)
         except Exception as e:
             logger.error(LOG_RESPONSE_GENERATION_FAILED, e)
             response_text = self._get_template_response(intent, context)

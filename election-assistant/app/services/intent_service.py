@@ -26,11 +26,12 @@ class IntentService:
         """Initialize IntentService with GeminiService instance."""
         self.gemini_service = GeminiService()
 
-    def classify(self, message: str) -> Tuple[str, float]:
+    def classify(self, message: str, context: str = "") -> Tuple[str, float]:
         """Classify user intent using LLM with keyword fallback.
 
         Args:
             message: User's question text.
+            context: Previous conversation context.
 
         Returns:
             Tuple of (intent_category, confidence_score).
@@ -38,7 +39,7 @@ class IntentService:
             or confidence is too low.
         """
         if self.gemini_service.api_key:
-            intent, confidence = self.gemini_service.understand_intent(message)
+            intent, confidence = self.gemini_service.understand_intent(message, context)
             keyword_intent = self._keyword_classify(message)
 
             # Recover from weak or failed LLM classification so the assistant
