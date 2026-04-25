@@ -20,3 +20,7 @@ env/
 htmlcov/
 .vscode/
 .idea/
+.env.local
+*.key
+*.pem
+service-account.json
