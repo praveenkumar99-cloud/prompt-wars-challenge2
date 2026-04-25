@@ -50,7 +50,7 @@ gcloud run deploy $ServiceName `
     --region $Region `
     --allow-unauthenticated `
     --port 8080 `
-    --set-env-vars "GEMINI_MODEL=gemini-1.5-pro,ELECTION_COUNTRY=USA,ELECTION_YEAR=2024,GCP_PROJECT_ID=$ProjectId,GCP_PROJECT_NUMBER=$ProjectNumber,GCP_REGION=$Region,CLOUD_RUN_SERVICE_URL=$ServiceUrl" `
+    --set-env-vars "GEMINI_MODEL=gemini-3-flash,ELECTION_COUNTRY=USA,ELECTION_YEAR=2024,GCP_PROJECT_ID=$ProjectId,GCP_PROJECT_NUMBER=$ProjectNumber,GCP_REGION=$Region,CLOUD_RUN_SERVICE_URL=$ServiceUrl" `
     --set-secrets "GOOGLE_API_KEY=${GeminiSecretName}:latest"
 
 Write-Host "`nDeployment complete!" -ForegroundColor Green

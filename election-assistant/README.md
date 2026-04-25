@@ -52,7 +52,7 @@ The application will be available at `http://localhost:8000`.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GOOGLE_API_KEY` | Your Gemini API key from Google AI Studio | *(required)* |
-| `GEMINI_MODEL` | Model to use for responses | `gemini-1.5-pro` |
+| `GEMINI_MODEL` | Model to use for responses | `gemini-3-flash` |
 | `GCP_PROJECT_ID` | Your GCP project ID | `praveen-space` |
 | `GCP_PROJECT_NUMBER` | Your GCP project number | `665822784067` |
 | `GCP_REGION` | Region for Cloud Run deployment | `us-central1` |
