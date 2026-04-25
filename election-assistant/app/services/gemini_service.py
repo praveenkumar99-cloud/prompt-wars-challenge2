@@ -11,7 +11,7 @@ class GeminiService:
     
     def __init__(self):
         self.model_name = config.GEMINI_MODEL
-        self.api_key = config.GOOGLE_API_KEY
+        self.api_key = (config.GOOGLE_API_KEY or "").strip()
         self._client = None
     
     def _get_client(self):

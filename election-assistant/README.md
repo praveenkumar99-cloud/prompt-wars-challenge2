@@ -10,7 +10,7 @@ Multi-intent understanding using Google's Gemini 1.5 Pro for:
 - Step-by-step guidance for election participation
 
 ## How It Works
-`User asks question → Gemini classifies intent → Retrieve relevant info → Generate personalized response → Interactive follow-up`
+`User asks question -> Gemini classifies intent -> Retrieve relevant info -> Generate personalized response -> Interactive follow-up`
 
 ## Setup Instructions
 
@@ -41,7 +41,7 @@ uvicorn app.main:app --reload --port 8000
 
 ### Testing
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 ## Deployment to Google Cloud Run
@@ -59,41 +59,21 @@ pytest tests/ -v
 
 2. Enable required APIs:
    ```bash
-   gcloud services enable run.googleapis.com containerregistry.googleapis.com
+   gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
    ```
 
 3. Run the deployment script:
    ```powershell
    .\deploy.ps1 -ProjectId YOUR_PROJECT_ID -GoogleApiKey YOUR_GEMINI_API_KEY
    ```
-   Or with custom service name and region:
-   ```powershell
-   .\deploy.ps1 -ProjectId YOUR_PROJECT_ID -GoogleApiKey YOUR_GEMINI_API_KEY -ServiceName my-election-assistant -Region us-west1
-   ```
 
-   The deployment uses **gemini-pro** as the default model for optimal cost and performance.
+   The deployment uses **gemini-1.5-pro** and stores the Gemini API key in **Secret Manager**.
 
 4. The script will:
    - Build the Docker image
-   - Push to Google Container Registry
+   - Store the Gemini API key in Secret Manager
    - Deploy to Cloud Run
    - Display the service URL
-
-### Manual Deployment (Alternative)
-If you prefer manual steps:
-```bash
-# Build and push image
-docker build -t gcr.io/YOUR_PROJECT_ID/election-assistant .
-docker push gcr.io/YOUR_PROJECT_ID/election-assistant
-
-# Deploy to Cloud Run
-gcloud run deploy election-assistant \
-  --image gcr.io/YOUR_PROJECT_ID/election-assistant \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --port 8080
-```
 
 ### API Endpoints
 | Method | Endpoint | Description |
@@ -102,6 +82,7 @@ gcloud run deploy election-assistant \
 | POST | `/api/chat` | Send message to assistant |
 | GET | `/api/timeline` | Get election timeline |
 | GET | `/api/steps/{step_id}` | Get detailed step information |
+| GET | `/api/system/status` | Verify configured Google service integrations |
 
 ## Demo Questions to Ask
 - "How do I register to vote?"
@@ -110,9 +91,3 @@ gcloud run deploy election-assistant \
 - "How can I vote by mail?"
 - "What documents do I need to bring to vote?"
 - "Where is my polling place?"
-
-## Assumptions
-1. Election data is based on general USA federal election guidelines
-2. State-specific variations are noted where applicable
-3. Gemini API is accessible with valid API key
-4. Real-time election dates would be integrated via official APIs in production

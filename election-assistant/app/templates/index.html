@@ -7,46 +7,57 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🗳️ Election Process Assistant</h1>
-            <p>Your guide to voter registration, deadlines, and more.</p>
-        </div>
-        
+    <a class="skip-link" href="#chat-panel">Skip to chat</a>
+    <main class="container">
+        <header class="header">
+            <p class="eyebrow">Election Assistant</p>
+            <h1>Election Process Assistant</h1>
+            <p>Your guide to voter registration, deadlines, voting options, and official next steps.</p>
+        </header>
+
         <div class="main-content">
-            <div class="chat-section">
-                <div class="chat-messages" id="chat-messages">
+            <section class="chat-section" id="chat-panel" aria-labelledby="chat-heading">
+                <div class="section-head">
+                    <div>
+                        <h2 id="chat-heading">Chat</h2>
+                        <p class="section-copy">Ask about registration, dates, voting methods, or required documents.</p>
+                    </div>
+                    <div class="service-badge" id="service-badge" aria-live="polite">Checking services</div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-relevant="additions">
                     <div class="message assistant">
                         <div class="message-content">
                             Hello! I'm your Election Assistant. I can help you with voter registration, deadlines, voting locations, and required documents. What would you like to know?
                         </div>
                     </div>
                 </div>
-                
-                <div class="chat-input-area">
-                    <input type="text" id="user-input" class="chat-input" placeholder="Type your election question here..." onkeypress="handleKeyPress(event)">
-                    <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
-                </div>
-            </div>
-            
-            <div class="sidebar">
+
+                <form class="chat-input-area" onsubmit="sendMessage(event)">
+                    <label class="sr-only" for="user-input">Election question</label>
+                    <input type="text" id="user-input" class="chat-input" placeholder="Type your election question here..." autocomplete="off">
+                    <button class="send-btn" id="send-btn" type="submit">Send</button>
+                </form>
+            </section>
+
+            <aside class="sidebar" aria-labelledby="suggestions-heading">
                 <div class="suggestions">
-                    <h3>Try Asking:</h3>
+                    <h2 id="suggestions-heading">Try Asking</h2>
                     <div id="suggestions-container">
-                        <button class="suggestion-btn" onclick="useSuggestion('How do I register to vote?')">How do I register to vote?</button>
-                        <button class="suggestion-btn" onclick="useSuggestion('What are the important election deadlines?')">What are the important election deadlines?</button>
-                        <button class="suggestion-btn" onclick="useSuggestion('When is the primary election?')">When is the primary election?</button>
-                        <button class="suggestion-btn" onclick="useSuggestion('How can I vote by mail?')">How can I vote by mail?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('How do I register to vote?')" type="button">How do I register to vote?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('What are the important election deadlines?')" type="button">What are the important election deadlines?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('When is the primary election?')" type="button">When is the primary election?</button>
+                        <button class="suggestion-btn" onclick="useSuggestion('How can I vote by mail?')" type="button">How can I vote by mail?</button>
                     </div>
-                    <div class="sources" id="sources-container" style="display: none;">
-                        <strong>Sources Consulted:</strong>
-                        <ul id="sources-list" style="margin-top: 5px; margin-left: 20px;"></ul>
+                    <div class="sources" id="sources-container" hidden>
+                        <h3>Sources Consulted</h3>
+                        <ul id="sources-list"></ul>
                     </div>
                 </div>
-            </div>
+            </aside>
         </div>
-    </div>
-    
+    </main>
+
     <script src="/static/script.js"></script>
 </body>
 </html>

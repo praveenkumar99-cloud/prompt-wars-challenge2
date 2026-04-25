@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from app.services.assistant_service import AssistantService
 
 @pytest.mark.asyncio

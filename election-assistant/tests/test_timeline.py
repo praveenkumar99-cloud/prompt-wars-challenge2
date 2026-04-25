@@ -1,4 +1,3 @@
-import pytest
 from app.services.timeline_service import TimelineService
 
 def test_timeline_load():

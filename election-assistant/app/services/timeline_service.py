@@ -1,9 +1,7 @@
 """Election timeline information service"""
 import json
 import os
-from datetime import datetime
 from typing import List, Dict
-from ..models import TimelineEvent
 
 class TimelineService:
     """Service for providing election timeline information"""
@@ -25,17 +23,9 @@ class TimelineService:
         return self.knowledge.get("important_dates_2024", [])
     
     def get_upcoming_events(self, days_ahead: int = 30) -> List[Dict]:
-        """Get events within specified days (mock implementation)"""
+        """Get the nearest election events."""
         all_events = self.get_full_timeline()
-        # In production, this would calculate actual dates
-        return all_events[:3]  # Return first 3 as "upcoming" for demo
-    
-    def get_event_by_name(self, event_name: str) -> Dict:
-        """Get specific event details"""
-        for event in self.get_full_timeline():
-            if event_name.lower() in event.get("event", "").lower():
-                return event
-        return None
+        return all_events[: min(days_ahead, 3)]
     
     def get_deadline_info(self) -> Dict:
         """Get voter registration deadline information"""

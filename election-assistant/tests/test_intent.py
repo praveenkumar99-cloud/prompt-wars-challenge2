@@ -1,6 +1,4 @@
-import pytest
 from app.services.intent_service import IntentService
-from app.models import IntentType
 
 def test_keyword_classification():
     service = IntentService()

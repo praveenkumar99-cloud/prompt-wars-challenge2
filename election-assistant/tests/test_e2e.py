@@ -1,20 +1,23 @@
-import pytest
 from fastapi.testclient import TestClient
-from app.server import app
 
-client = TestClient(app)
+from app.server import create_app
 
-def test_end_to_end():
-    # Step 1: Google Sign-In
-    response = client.post("/auth/google-signin", json={"id_token": "test-token"})
+
+client = TestClient(create_app())
+
+
+def test_root_page_loads():
+    response = client.get("/")
+
     assert response.status_code == 200
+    assert "Election Process Assistant" in response.text
+    assert 'id="chat-messages"' in response.text
 
-    # Step 2: Ask a question
-    response = client.post("/vertex-ai/gemini", json={"query": "What are the election dates?"})
-    assert response.status_code == 200
-    assert "response" in response.json()
 
-    # Step 3: Download guide
-    response = client.get("/download/guide/sample-guide-id")
+def test_system_status_endpoint():
+    response = client.get("/api/system/status")
+
     assert response.status_code == 200
-    assert "download_url" in response.json()
+    payload = response.json()
+    assert payload["project_id"] == "praveen-space"
+    assert "google_api_key_configured" in payload

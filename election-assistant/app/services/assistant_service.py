@@ -4,7 +4,6 @@ from typing import Dict, List
 from .gemini_service import GeminiService
 from .intent_service import IntentService
 from .timeline_service import TimelineService
-from .step_service import StepService
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,6 @@ class AssistantService:
         self.gemini_service = GeminiService()
         self.intent_service = IntentService()
         self.timeline_service = TimelineService()
-        self.step_service = StepService()
     
     async def process_message(self, message: str, session_id: str = None) -> Dict:
         """Process user message and return assistant response"""

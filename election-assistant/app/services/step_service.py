@@ -1,5 +1,5 @@
-"""Step-by-step election guidance service"""
-from typing import List, Dict
+"""Step-by-step election guidance service."""
+from typing import List
 from ..models import ElectionStep
 
 class StepService:

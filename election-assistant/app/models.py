@@ -1,35 +1,19 @@
-"""Pydantic models for request/response validation"""
-from pydantic import BaseModel
-from typing import List, Optional, Dict
-from enum import Enum
-from datetime import datetime
+"""Pydantic models for request and response validation."""
+from typing import List, Optional
 
-class IntentType(str, Enum):
-    REGISTRATION = "registration"
-    DEADLINES = "deadlines"
-    VOTING_METHODS = "voting_methods"
-    REQUIREMENTS = "requirements"
-    POLLING_LOCATIONS = "polling_locations"
-    CANDIDATES = "candidates"
-    GENERAL = "general"
+from pydantic import BaseModel
+
 
 class ChatRequest(BaseModel):
+    """Incoming chat request."""
+
     message: str
     session_id: Optional[str] = None
 
-class ChatResponse(BaseModel):
-    response: str
-    intent: IntentType
-    follow_up_suggestions: List[str]
-    sources: List[str]
-
-class TimelineEvent(BaseModel):
-    event_name: str
-    date: str
-    description: str
-    days_remaining: Optional[int] = None
 
 class ElectionStep(BaseModel):
+    """Structured step-by-step guidance."""
+
     step_id: str
     title: str
     description: str
