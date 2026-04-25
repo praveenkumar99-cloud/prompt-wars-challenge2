@@ -48,6 +48,15 @@ class AssistantService:
         self.timeline_service: TimelineService = TimelineService()
         self.cache_service: CacheService = CacheService()
         self.audit_service: AuditService = AuditService()
+        self.conversation_history = {}  # Store last 5 messages per session
+
+    def get_conversation_context(self, session_id: str) -> str:
+        """Get recent conversation history for context"""
+        if session_id not in self.conversation_history:
+            return ""
+        history = self.conversation_history[session_id][-3:]  # Last 3 exchanges
+        context = "\n".join([f"User: {h['user']}\nAssistant: {h['assistant']}" for h in history])
+        return f"Previous conversation:\n{context}\n\n"
 
     async def process_message(
         self,
@@ -68,6 +77,16 @@ class AssistantService:
         Raises:
             Exception: On critical processing failures (propagated to route handler).
         """
+        if not session_id:
+            import uuid
+            session_id = str(uuid.uuid4())
+
+        # Get conversation context
+        context = self.get_conversation_context(session_id)
+
+        # Enhance prompt with context
+        enhanced_message = f"{context}User question: {message}"
+
         logger.info(
             "Processing message (lang=%s, session=%s): %s...",
             language,
@@ -76,7 +95,7 @@ class AssistantService:
         )
 
         # Check cache for identical messages
-        message_hash = hashlib.md5(message.encode()).hexdigest()
+        message_hash = hashlib.md5(enhanced_message.encode()).hexdigest()
         cached_intent = self.cache_service.get_intent_result(message_hash)
 
         # Step 1: Classify intent (use cache if available)
@@ -86,9 +105,9 @@ class AssistantService:
             logger.debug("Using cached intent classification")
         else:
             try:
-                intent, confidence = self.intent_service.classify(message)
+                intent, confidence = await self.gemini_service.understand_intent(enhanced_message)
                 # Cache the result
-                self.cache_service.set_intent_result(intent, confidence)
+                self.cache_service.set_intent_result(message_hash, intent, confidence)
             except Exception as e:
                 logger.error(LOG_INTENT_CLASSIFICATION_FAILED, e)
                 intent = INTENT_GENERAL
@@ -105,13 +124,13 @@ class AssistantService:
                 logger.debug("Using Vertex AI for response generation")
                 response_text = (
                     self.vertex_ai_service.generate_response_advanced(
-                        message, intent, context
+                        enhanced_message, intent, context
                     )
                 )
             elif self.gemini_service.api_key:
                 logger.debug("Using Gemini for response generation")
                 response_text = self.gemini_service.generate_response(
-                    message, intent, context
+                    enhanced_message, intent, context
                 )
             else:
                 logger.debug("Using template response")
@@ -156,11 +175,19 @@ class AssistantService:
             except Exception as e:
                 logger.warning("Firestore write failed: %s", e)
 
+        # Store in history
+        if session_id not in self.conversation_history:
+            self.conversation_history[session_id] = []
+        self.conversation_history[session_id].append({"user": message, "assistant": response_text})
+        # Keep only last 5
+        self.conversation_history[session_id] = self.conversation_history[session_id][-5:]
+
         result = {
             "response": response_text,
             "intent": intent,
             "follow_up_suggestions": follow_ups[:3],
             "sources": sources,
+            "session_id": session_id
         }
 
         logger.info("Message processed successfully for session: %s", session_id)
