@@ -1,3 +1,14 @@
+# ================================================================
+# Files that must NEVER be committed or submitted
+# ================================================================
+.env
+*.log
+*.tmp
+*.cache
+deploy.ps1
+project_summary.txt
+# ================================================================
+
 __pycache__/
 *.pyc
 *.pyo
@@ -8,13 +19,11 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.env
 .venv/
 venv/
 ENV/
 env/
 .DS_Store
-*.log
 .pytest_cache/
 .coverage
 htmlcov/
@@ -24,6 +33,3 @@ htmlcov/
 *.key
 *.pem
 service-account.json
-deploy.log
-deploy.ps1
-project_summary.txt

@@ -18,7 +18,7 @@ class Config:
 
     # Google API Configuration
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
 
     # Election Configuration
     ELECTION_COUNTRY: str = os.getenv("ELECTION_COUNTRY", "USA")
@@ -31,7 +31,7 @@ class Config:
     CLOUD_RUN_SERVICE_URL: str = os.getenv("CLOUD_RUN_SERVICE_URL", "")
 
     # Vertex AI Configuration
-    VERTEX_AI_LOCATION: str = os.getenv("VERTEX_AI_LOCATION", "us-central1")
+    VERTEX_AI_LOCATION: str = os.getenv("VERTEX_AI_LOCATION", "us-west1")
 
     # Firestore Configuration
     FIRESTORE_COLLECTION: str = os.getenv("FIRESTORE_COLLECTION", "chat_sessions")

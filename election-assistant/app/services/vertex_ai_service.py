@@ -39,7 +39,7 @@ class VertexAIService:
                 project=config.GCP_PROJECT_ID,
                 location=config.VERTEX_AI_LOCATION,
             )
-            self._client = GenerativeModel("gemini-1.5-pro-vision")
+            self._client = GenerativeModel("gemini-2.5-pro")
             self._initialized = True
             logger.info("Vertex AI initialized successfully")
             return True
