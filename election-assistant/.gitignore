@@ -24,3 +24,6 @@ htmlcov/
 *.key
 *.pem
 service-account.json
+deploy.log
+deploy.ps1
+project_summary.txt

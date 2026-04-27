@@ -329,3 +329,16 @@ body {
         border: 2px solid ButtonText;
     }
 }
+
+/* Voice input active state */
+#voice-input-btn.listening {
+    background: #d93025;
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(217, 48, 37, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(217, 48, 37, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(217, 48, 37, 0); }
+}

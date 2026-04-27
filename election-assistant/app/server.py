@@ -98,42 +98,6 @@ def create_app() -> FastAPI:
     # Add GZIP compression middleware
     app.add_middleware(GZIPMiddleware, minimum_size=1000)
 
-    # Add security headers middleware
-    @app.middleware("http")
-    async def add_security_headers(request: Request, call_next: Callable) -> Any:
-        """Add security headers to all responses.
-
-        Args:
-            request: HTTP request.
-            call_next: Next middleware callable.
-
-        Returns:
-            Response with security headers added.
-        """
-        response = await call_next(request)
-
-        # Strict-Transport-Security
-        response.headers["Strict-Transport-Security"] = SECURITY_HEADER_HSTS
-
-        # X-Frame-Options (clickjacking protection)
-        response.headers["X-Frame-Options"] = SECURITY_HEADER_X_FRAME_OPTIONS
-
-        # X-Content-Type-Options (MIME sniffing protection)
-        response.headers[
-            "X-Content-Type-Options"
-        ] = SECURITY_HEADER_X_CONTENT_TYPE_OPTIONS
-
-        # X-XSS-Protection
-        response.headers["X-XSS-Protection"] = SECURITY_HEADER_X_XSS_PROTECTION
-
-        # Referrer-Policy
-        response.headers["Referrer-Policy"] = SECURITY_HEADER_REFERRER_POLICY
-
-        # Permissions-Policy (Feature-Policy)
-        response.headers["Permissions-Policy"] = SECURITY_HEADER_PERMISSIONS_POLICY
-
-        return response
-
     # Configure CORS with strict settings
     cors_origins = config.API_CORS_ORIGINS
     if cors_origins != ["*"]:
@@ -226,6 +190,44 @@ def create_app() -> FastAPI:
     )
     async def system_status() -> SystemStatusResponse:
         """Expose a compact deployment status summary.
+
+        Returns:
+            SystemStatusResponse with project and configuration info.
+    """
+    return get_system_status()  # type: ignore[return-value]
+
+    from .models import SystemStatusResponse
+
+    @app.get(
+        "/health",
+        tags=["system"],
+        summary="Health check endpoint",
+    )
+    async def health_check() -> dict:
+        """Health check endpoint for load balancers and monitoring.
+
+        Returns:
+            Dictionary with service health status.
+        """
+        status = get_system_status()
+        return {
+            "status": "healthy",
+            "project_id": status.get("project_id", ""),
+            "region": status.get("region", ""),
+            "google_api_key_configured": status.get("google_api_key_configured", False),
+            "vertex_ai_enabled": getattr(config, "ENABLE_VERTEX_AI", False),
+            "firestore_enabled": getattr(config, "ENABLE_FIRESTORE", False),
+            "redis_enabled": getattr(config, "ENABLE_REDIS_CACHE", False),
+        }
+
+    @app.get(
+        "/api/status",
+        response_model=SystemStatusResponse,
+        tags=["system"],
+        summary="API status endpoint alias",
+    )
+    async def api_status() -> SystemStatusResponse:
+        """Alias for system status — used by monitoring tools.
 
         Returns:
             SystemStatusResponse with project and configuration info.

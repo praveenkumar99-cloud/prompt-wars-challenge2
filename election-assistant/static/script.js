@@ -260,72 +260,63 @@ function handleSuggestionKeydown(event) {
     }
 }
 
-function checkVoiceSupport() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognitionSupported = !!SpeechRecognition;
+// Voice Input using Web Speech API
+const voiceBtn = document.getElementById('voice-input-btn');
+const chatInput = document.getElementById('user-input');
 
-    const voiceBtn = document.getElementById('voice-input-btn');
-    if (!recognitionSupported && voiceBtn) {
-        voiceBtn.disabled = true;
-        voiceBtn.title = 'Voice input is not supported in your browser';
-    }
-}
-
-function toggleVoiceInput() {
-    if (!recognitionSupported) {
-        announceToScreenReader('Voice input is not supported in your browser');
-        return;
-    }
-
+if (voiceBtn && 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    recognition.lang = currentLanguage === 'es' ? 'es-ES' : 'en-US';
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
     recognition.continuous = false;
-    recognition.interimResults = true;
 
-    const voiceBtn = document.getElementById('voice-input-btn');
-    const userInput = document.getElementById('user-input');
+    voiceBtn.addEventListener('click', () => {
+        voiceBtn.setAttribute('aria-pressed', 'true');
+        voiceBtn.setAttribute('aria-label', 'Listening... click to stop');
+        voiceBtn.classList.add('listening');
+        recognition.start();
+    });
 
-    recognition.onstart = function() {
-        isListening = true;
-        if (voiceBtn) {
-            voiceBtn.textContent = '🎤 Listening...';
-            voiceBtn.classList.add('listening');
-        }
-        announceToScreenReader('Voice input started. Speak your question.');
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        chatInput.value = transcript;
+        chatInput.focus();
+        voiceBtn.setAttribute('aria-pressed', 'false');
+        voiceBtn.setAttribute('aria-label', 'Use voice input to ask a question');
+        voiceBtn.classList.remove('listening');
+        // Announce to screen readers
+        const announcement = document.createElement('div');
+        announcement.setAttribute('role', 'status');
+        announcement.setAttribute('aria-live', 'polite');
+        announcement.className = 'sr-only';
+        announcement.textContent = 'Voice input captured: ' + transcript;
+        document.body.appendChild(announcement);
+        setTimeout(() => document.body.removeChild(announcement), 3000);
     };
 
-    recognition.onresult = function(event) {
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-
-            if (event.results[i].isFinal) {
-                userInput.value = transcript;
-                document.getElementById('chat-form').dispatchEvent(new Event('submit'));
-            } else {
-                interimTranscript += transcript;
-            }
-        }
+    recognition.onerror = (event) => {
+        console.warn('Voice recognition error:', event.error);
+        voiceBtn.setAttribute('aria-pressed', 'false');
+        voiceBtn.setAttribute('aria-label', 'Use voice input to ask a question');
+        voiceBtn.classList.remove('listening');
+        chatInput.placeholder = 'Voice input unavailable. Type your question here...';
+        setTimeout(() => {
+            chatInput.placeholder = 'Type your election question here...';
+        }, 3000);
     };
 
-    recognition.onerror = function(event) {
-        console.error('Voice input error:', event.error);
-        announceToScreenReader(`Voice input error: ${event.error}`);
+    recognition.onend = () => {
+        voiceBtn.setAttribute('aria-pressed', 'false');
+        voiceBtn.setAttribute('aria-label', 'Use voice input to ask a question');
+        voiceBtn.classList.remove('listening');
     };
-
-    recognition.onend = function() {
-        isListening = false;
-        if (voiceBtn) {
-            voiceBtn.textContent = '🎤 Voice Input';
-            voiceBtn.classList.remove('listening');
-        }
-        announceToScreenReader('Voice input ended');
-    };
-
-    recognition.start();
+} else if (voiceBtn) {
+    // Browser doesn't support voice input — hide gracefully
+    voiceBtn.style.display = 'none';
+    voiceBtn.setAttribute('aria-hidden', 'true');
 }
 
 function printConversation() {
