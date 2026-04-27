@@ -33,7 +33,7 @@ function initializeApp() {
 }
 
 function checkVoiceSupport() {
-    """Check browser support for Web Speech API and initialize voice input."""
+    // Check browser support for Web Speech API and initialize voice input.
     const voiceBtn = document.getElementById('voice-input-btn');
     const chatInput = document.getElementById('user-input');
 
