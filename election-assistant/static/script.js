@@ -16,6 +16,7 @@ let sessionId = localStorage.getItem(CONFIG.SESSION_ID_KEY) || generateSessionId
 let currentLanguage = localStorage.getItem(CONFIG.LANGUAGE_KEY) || 'en';
 let isListening = false;
 let recognitionSupported = false;
+let topicsSet = new Set();
 
 localStorage.setItem(CONFIG.SESSION_ID_KEY, sessionId);
 
@@ -102,6 +103,22 @@ function setupEventListeners() {
         chatForm.addEventListener('submit', handleFormSubmit);
     }
 
+    const userInput = document.getElementById('user-input');
+    const charCounter = document.getElementById('char-counter');
+
+    if (userInput && charCounter) {
+        userInput.addEventListener('input', () => {
+            const remaining = 500 - userInput.value.length;
+            charCounter.textContent = remaining;
+            charCounter.className = 'char-counter';
+            if (remaining < 100) charCounter.classList.add('warning');
+            if (remaining < 20) {
+                charCounter.classList.remove('warning');
+                charCounter.classList.add('danger');
+            }
+        });
+    }
+
     const printBtn = document.getElementById('print-btn');
     if (printBtn) {
         printBtn.addEventListener('click', printConversation);
@@ -144,30 +161,34 @@ function generateSessionId() {
     return 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }
 
+function updateServiceBadge(connected, serviceName) {
+    const badge = document.getElementById('service-badge');
+    if (!badge) return;
+    const statusText = badge.querySelector('.status-text');
+    if (connected) {
+        badge.classList.add('connected');
+        if (statusText) statusText.textContent = 'Connected: ' + (serviceName || 'Gemini');
+    } else {
+        badge.classList.remove('connected');
+        if (statusText) statusText.textContent = 'Connecting...';
+    }
+}
+
 async function checkServiceStatus() {
     try {
         const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.STATUS_ENDPOINT}`);
         const data = await response.json();
 
-        const badge = document.getElementById('service-badge');
-        if (badge) {
-            if (response.ok) {
-                badge.textContent = '✓ Services Ready';
-                badge.classList.add('status-ready');
-                announceToScreenReader('Services are ready');
-            } else {
-                badge.textContent = '⚠ Service Issues';
-                badge.classList.add('status-error');
-                announceToScreenReader('Some services may be unavailable');
-            }
+        if (response.ok) {
+            updateServiceBadge(true, 'Gemini');
+            announceToScreenReader('Services are ready');
+        } else {
+            updateServiceBadge(false);
+            announceToScreenReader('Some services may be unavailable');
         }
     } catch (error) {
         console.error('Status check failed:', error);
-        const badge = document.getElementById('service-badge');
-        if (badge) {
-            badge.textContent = '✗ Service Offline';
-            badge.classList.add('status-error');
-        }
+        updateServiceBadge(false);
     }
 }
 
@@ -193,8 +214,9 @@ async function handleFormSubmit(event) {
     sendBtn.textContent = 'Sending...';
 
     try {
-        addMessageToChat('user', message);
+        addMessage(message, true);
         userInput.value = '';
+        showTypingIndicator();
 
         const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.CHAT_ENDPOINT}`, {
             method: 'POST',
@@ -215,7 +237,8 @@ async function handleFormSubmit(event) {
 
         const data = await response.json();
 
-        addMessageToChat('assistant', data.response);
+        removeTypingIndicator();
+        addMessage(data.response, false, data.intent);
         announceToScreenReader(`Assistant says: ${data.response.substring(0, 100)}`);
 
         if (data.follow_up_suggestions && data.follow_up_suggestions.length > 0) {
@@ -230,7 +253,8 @@ async function handleFormSubmit(event) {
 
     } catch (error) {
         console.error('Chat error:', error);
-        addMessageToChat('system', `Error: ${error.message}`);
+        removeTypingIndicator();
+        addMessage(`Error: ${error.message}`, false);
         announceToScreenReader(`Error: ${error.message}`);
     } finally {
         userInput.disabled = false;
@@ -240,31 +264,62 @@ async function handleFormSubmit(event) {
     }
 }
 
-function addMessageToChat(sender, message) {
+function addMessage(content, isUser, intent) {
+    // Hide empty state on first message
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+
     const chatMessages = document.getElementById('chat-messages');
-    if (!chatMessages) return;
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}`;
-    messageDiv.setAttribute('role', 'article');
+    const row = document.createElement('div');
+    row.className = isUser ? 'message-row user-row' : 'message-row';
 
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
+    const avatarEmoji = isUser ? '👤' : '🤖';
+    const avatarClass = isUser ? 'user-avatar' : 'bot-avatar';
+    const bubbleClass = isUser ? 'user-bubble' : 'bot-bubble';
 
-    if (sender === 'assistant') {
-        contentDiv.innerHTML = formatMessageForDisplay(message);
-    } else {
-        contentDiv.textContent = message;
+    row.innerHTML = `
+        <div class="avatar ${avatarClass}" aria-hidden="true">${avatarEmoji}</div>
+        <div class="message-content">
+            <div class="message-bubble ${bubbleClass}">${content}</div>
+            <span class="message-time">${now}</span>
+        </div>
+    `;
+
+    chatMessages.appendChild(row);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Update session stats
+    if (!isUser) {
+        updateStats(intent);
     }
+}
 
-    messageDiv.appendChild(contentDiv);
-    chatMessages.appendChild(messageDiv);
+function showTypingIndicator() {
+    const chatMessages = document.getElementById('chat-messages');
+    const existing = document.getElementById('typing-indicator');
+    if (existing) existing.remove();
 
-    const timestamp = new Date().toLocaleTimeString();
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'sr-only';
-    timeSpan.textContent = `${sender === 'user' ? 'You' : 'Assistant'} at ${timestamp}`;
-    messageDiv.appendChild(timeSpan);
+    const row = document.createElement('div');
+    row.className = 'typing-row';
+    row.id = 'typing-indicator';
+    row.setAttribute('aria-label', 'Assistant is typing');
+    row.innerHTML = `
+        <div class="avatar bot-avatar" aria-hidden="true">🤖</div>
+        <div class="typing-bubble">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    `;
+    chatMessages.appendChild(row);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
 }
 
 function formatMessageForDisplay(message) {
@@ -300,6 +355,31 @@ function displaySources(sources) {
         li.textContent = source;
         sourcesList.appendChild(li);
     });
+}
+
+function sendQuickQuestion(question) {
+    const userInput = document.getElementById('user-input');
+    if (userInput) {
+        userInput.value = question;
+        userInput.focus();
+        const form = document.getElementById('chat-form');
+        if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+}
+
+function updateStats(intent) {
+    const questionsCount = document.getElementById('questions-count');
+    const topicsCount = document.getElementById('topics-count');
+
+    if (questionsCount) {
+        const current = parseInt(questionsCount.textContent) || 0;
+        questionsCount.textContent = current + 1;
+    }
+
+    if (intent && topicsCount) {
+        topicsSet.add(intent);
+        topicsCount.textContent = topicsSet.size;
+    }
 }
 
 function useSuggestion(suggestionText) {

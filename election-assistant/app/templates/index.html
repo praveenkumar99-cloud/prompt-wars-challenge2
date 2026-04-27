@@ -3,264 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Election Assistant - Your guide to voter registration, deadlines, voting options, and official next steps.">
-    <meta name="theme-color" content="#1f2937">
-    <title>Election Assistant - Your Guide to Voting</title>
+    <title>Election Assistant</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        /* High contrast mode support */
-        @media (forced-colors: active) {
-            * {
-                border-color: CanvasText !important;
-                color: CanvasText !important;
-                background-color: Canvas !important;
-            }
-            .skip-link {
-                background-color: Highlight;
-                color: HighlightText;
-            }
-            button:focus, a:focus, input:focus {
-                outline: 3px solid HighlightText !important;
-                outline-offset: 2px !important;
-            }
-        }
-
-        /* Visible focus indicators */
-        *:focus-visible {
-            outline: 3px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        a:focus-visible {
-            outline: 3px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        button:focus-visible {
-            outline: 3px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        input:focus-visible {
-            outline: 3px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        /* Skip link styling */
-        .skip-link {
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            z-index: 999;
-            padding: 1em;
-            background-color: #000;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 0 0 4px 0;
-        }
-
-        .skip-link:focus {
-            top: 0;
-            left: 0;
-            outline: 3px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
-            }
-        }
-
-        /* Screen reader only text */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Skip to main content link (WCAG 2.1 AA) -->
-    <a class="skip-link" href="#chat-panel">Skip to main content</a>
+    <!-- Skip navigation for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
-    <!-- Page header with landmark role -->
-    <header role="banner" class="header">
-        <div class="container">
-            <p class="eyebrow">Election Assistant</p>
-            <h1>Election Process Assistant</h1>
-            <p>Your guide to voter registration, deadlines, voting options, and official next steps.</p>
+    <!-- Header -->
+    <header class="app-header" role="banner">
+        <div class="header-inner">
+            <div class="header-brand">
+                <div class="brand-icon" aria-hidden="true">🗳️</div>
+                <div class="brand-text">
+                    <span class="brand-name">Election Assistant</span>
+                    <span class="brand-tagline">Powered by Google Gemini</span>
+                </div>
+            </div>
+            <div class="header-status">
+                <div class="service-badge" id="service-badge" aria-live="polite" role="status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
         </div>
     </header>
 
-    <!-- Main content area -->
-    <main role="main" class="container">
-        <div class="main-content">
-            <!-- Chat section -->
-            <section class="chat-section" id="chat-panel" aria-labelledby="chat-heading">
-                <div class="section-head">
-                    <div>
-                        <h2 id="chat-heading">Chat with Assistant</h2>
-                        <p class="section-copy" id="chat-desc">
-                            Ask any questions about voter registration, election dates, voting methods, required documents, polling locations, or candidates.
-                        </p>
-                    </div>
-                    <div class="service-badge" id="service-badge" aria-live="polite" aria-atomic="true" role="status">
-                        <span class="sr-only">Service status:</span> Checking services
+    <!-- Main layout -->
+    <main id="main-content" class="app-main">
+        <div class="app-layout">
+
+            <!-- Left sidebar: Quick Questions -->
+            <aside class="sidebar-left" aria-label="Quick questions">
+                <div class="sidebar-card">
+                    <h2 class="sidebar-title">Quick Questions</h2>
+                    <p class="sidebar-subtitle">Tap to ask instantly</p>
+                    <div class="quick-chips" role="list">
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('How do I register to vote?')"
+                            aria-label="Ask: How do I register to vote?">
+                            <span class="chip-icon">📋</span>
+                            <span>Register to vote</span>
+                        </button>
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('What are the voting registration deadlines?')"
+                            aria-label="Ask: What are the voting deadlines?">
+                            <span class="chip-icon">📅</span>
+                            <span>Voting deadlines</span>
+                        </button>
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('Where is my polling location?')"
+                            aria-label="Ask: Where is my polling location?">
+                            <span class="chip-icon">📍</span>
+                            <span>Polling location</span>
+                        </button>
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('How do I vote by mail?')"
+                            aria-label="Ask: How do I vote by mail?">
+                            <span class="chip-icon">✉️</span>
+                            <span>Vote by mail</span>
+                        </button>
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('What ID do I need to vote?')"
+                            aria-label="Ask: What ID do I need?">
+                            <span class="chip-icon">🪪</span>
+                            <span>Required ID</span>
+                        </button>
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('When is Election Day?')"
+                            aria-label="Ask: When is Election Day?">
+                            <span class="chip-icon">🗓️</span>
+                            <span>Election Day date</span>
+                        </button>
+                        <button class="chip-btn" role="listitem"
+                            onclick="sendQuickQuestion('Can I vote early?')"
+                            aria-label="Ask: Can I vote early?">
+                            <span class="chip-icon">⏰</span>
+                            <span>Early voting</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Chat messages area with live region -->
-                <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-relevant="additions text">
-                    <div class="message assistant" role="article">
-                        <div class="message-content">
-                            <p>Hello! I'm your Election Assistant. I can help you with:</p>
-                            <ul>
-                                <li>Voter registration requirements and deadlines</li>
-                                <li>Election dates and important deadlines</li>
-                                <li>Voting methods (mail, early, in-person)</li>
-                                <li>Required documents and ID requirements</li>
-                                <li>Polling locations and voting options</li>
-                                <li>Information about candidates and ballot measures</li>
-                            </ul>
-                            <p>What would you like to know?</p>
+                <!-- Sources panel -->
+                <div class="sidebar-card sources-card" id="sources-container" hidden>
+                    <h3 class="sidebar-title" id="sources-heading">Sources Consulted</h3>
+                    <ul id="sources-list" aria-labelledby="sources-heading" class="sources-list"></ul>
+                </div>
+            </aside>
+
+            <!-- Center: Chat -->
+            <section class="chat-section" aria-label="Election assistant chat">
+
+                <!-- Chat messages -->
+                <div class="chat-window" id="chat-messages" aria-live="polite" aria-label="Chat messages" role="log">
+                    <!-- Empty state -->
+                    <div class="empty-state" id="empty-state" aria-hidden="false">
+                        <div class="empty-icon">🗳️</div>
+                        <h3 class="empty-title">Ask me anything about elections</h3>
+                        <p class="empty-subtitle">Registration, deadlines, voting methods,<br>voting locations, required documents</p>
+                        <div class="empty-chips">
+                            <span class="empty-chip" onclick="sendQuickQuestion('How do I register to vote?')">How do I register?</span>
+                            <span class="empty-chip" onclick="sendQuickQuestion('What ID do I need to vote?')">What ID do I need?</span>
+                            <span class="empty-chip" onclick="sendQuickQuestion('When is Election Day?')">When is Election Day?</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Chat input form -->
-                <form class="chat-input-area" onsubmit="sendMessage(event)" id="chat-form" aria-label="Chat message form">
+                <!-- Input area -->
+                <div class="chat-input-area">
                     <div class="input-wrapper">
-                        <label class="sr-only" for="user-input">Election question</label>
-                        <input 
-                            type="text" 
-                            id="user-input" 
-                            class="chat-input" 
-                            placeholder="Type your election question here..." 
-                            autocomplete="off"
-                            aria-describedby="chat-desc"
-                            aria-label="Type your question about elections"
-                            required
-                        >
-                        <button 
-                            class="send-btn" 
-                            id="send-btn" 
-                            type="submit" 
-                            aria-label="Send message"
-                        >
-                            Send
-                        </button>
+                        <form id="chat-form" class="input-form" novalidate>
+                            <button type="button" id="voice-input-btn"
+                                class="icon-btn voice-btn"
+                                aria-label="Use voice input to ask a question"
+                                aria-pressed="false"
+                                title="Voice input">
+                                🎤
+                            </button>
+                            <input
+                                type="text"
+                                id="user-input"
+                                class="chat-input"
+                                placeholder="Type your election question here..."
+                                autocomplete="off"
+                                maxlength="500"
+                                aria-label="Type your election question"
+                                aria-describedby="chat-desc char-counter"
+                            >
+                            <button type="submit" id="send-btn"
+                                class="send-btn"
+                                aria-label="Send message">
+                                <span class="send-icon">➤</span>
+                            </button>
+                        </form>
+                        <div class="input-meta">
+                            <span class="input-hint" id="chat-desc">Press Enter or click Send to ask</span>
+                            <span class="char-counter" id="char-counter" aria-live="polite">500</span>
+                        </div>
                     </div>
-                </form>
 
-                <!-- Language selector -->
-                <div class="language-selector" aria-label="Language selection">
-                    <label for="language-select" class="sr-only">Select language</label>
-                    <select id="language-select" aria-label="Select language for responses">
-                        <option value="en">English</option>
-                        <option value="es">Español</option>
-                    </select>
-                </div>
-
-                <!-- Accessibility features section -->
-                <div class="accessibility-features" aria-labelledby="accessibility-heading">
-                    <h3 id="accessibility-heading">Accessibility Features</h3>
-                    <button id="voice-input-btn" aria-label="Use voice input to ask a question" type="button">
-                        🎤 Voice Input
-                    </button>
-                    <button id="print-btn" aria-label="Print current conversation" type="button">
-                        🖨️ Print
-                    </button>
-                    <button id="export-pdf-btn" aria-label="Export conversation as PDF" type="button">
-                        📄 Export PDF
-                    </button>
+                    <!-- Accessibility + export toolbar -->
+                    <div class="toolbar" role="toolbar" aria-label="Chat tools">
+                        <span class="toolbar-label">Tools:</span>
+                        <button id="voice-input-btn-toolbar" class="tool-btn"
+                            onclick="document.getElementById('voice-input-btn').click()"
+                            aria-label="Voice input">
+                            🎤 Voice
+                        </button>
+                        <button id="print-btn" class="tool-btn" aria-label="Print conversation">
+                            🖨️ Print
+                        </button>
+                        <button id="export-pdf-btn" class="tool-btn" aria-label="Export as PDF">
+                            📄 Export PDF
+                        </button>
+                        <select id="language-select" class="tool-select" aria-label="Select language">
+                            <option value="en">🌐 English</option>
+                            <option value="es">🌐 Español</option>
+                            <option value="fr">🌐 Français</option>
+                            <option value="zh">🌐 中文</option>
+                            <option value="hi">🌐 हिन्दी</option>
+                        </select>
+                    </div>
                 </div>
             </section>
 
-            <!-- Sidebar with complementary information -->
-            <aside class="sidebar" role="complementary" aria-labelledby="suggestions-heading">
-                <div class="suggestions">
-                    <h2 id="suggestions-heading">Quick Questions</h2>
-                    <p class="sr-only">Click any button below to ask a common election question</p>
-                    <div id="suggestions-container" class="suggestions-grid" role="list">
-                        <button 
-                            class="suggestion-btn" 
-                            onclick="useSuggestion('How do I register to vote?')" 
-                            type="button"
-                            role="listitem"
-                            aria-label="Ask: How do I register to vote?"
-                        >
-                            How do I register to vote?
-                        </button>
-                        <button 
-                            class="suggestion-btn" 
-                            onclick="useSuggestion('What are the important election deadlines?')" 
-                            type="button"
-                            role="listitem"
-                            aria-label="Ask: What are the important election deadlines?"
-                        >
-                            What are the important election deadlines?
-                        </button>
-                        <button 
-                            class="suggestion-btn" 
-                            onclick="useSuggestion('When is the primary election?')" 
-                            type="button"
-                            role="listitem"
-                            aria-label="Ask: When is the primary election?"
-                        >
-                            When is the primary election?
-                        </button>
-                        <button 
-                            class="suggestion-btn" 
-                            onclick="useSuggestion('How can I vote by mail?')" 
-                            type="button"
-                            role="listitem"
-                            aria-label="Ask: How can I vote by mail?"
-                        >
-                            How can I vote by mail?
-                        </button>
-                    </div>
-
-                    <!-- Sources section -->
-                    <div class="sources" id="sources-container" hidden aria-labelledby="sources-heading">
-                        <h3 id="sources-heading">Sources Consulted</h3>
-                        <ul id="sources-list" role="list" aria-label="Information sources"></ul>
+            <!-- Right sidebar: Resources -->
+            <aside class="sidebar-right" aria-label="Resources">
+                <div class="sidebar-card">
+                    <h2 class="sidebar-title">Official Resources</h2>
+                    <div class="resource-list">
+                        <a href="https://www.usa.gov/absentee-voting" target="_blank" rel="noopener noreferrer"
+                            class="resource-link" aria-label="USA.gov voting information (opens in new tab)">
+                            <span class="resource-icon">🇺🇸</span>
+                            <div class="resource-text">
+                                <span class="resource-name">USA.gov</span>
+                                <span class="resource-desc">Voting & Election Info</span>
+                            </div>
+                            <span class="resource-arrow">↗</span>
+                        </a>
+                        <a href="https://vote411.org" target="_blank" rel="noopener noreferrer"
+                            class="resource-link" aria-label="Vote411.org voter guide (opens in new tab)">
+                            <span class="resource-icon">🗳️</span>
+                            <div class="resource-text">
+                                <span class="resource-name">Vote411.org</span>
+                                <span class="resource-desc">Voter Guide & Tools</span>
+                            </div>
+                            <span class="resource-arrow">↗</span>
+                        </a>
+                        <a href="https://www.eac.gov" target="_blank" rel="noopener noreferrer"
+                            class="resource-link" aria-label="Election Assistance Commission (opens in new tab)">
+                            <span class="resource-icon">🏛️</span>
+                            <div class="resource-text">
+                                <span class="resource-name">EAC.gov</span>
+                                <span class="resource-desc">Election Assistance</span>
+                            </div>
+                            <span class="resource-arrow">↗</span>
+                        </a>
+                        <a href="https://www.nass.org/can-I-vote" target="_blank" rel="noopener noreferrer"
+                            class="resource-link" aria-label="Can I Vote tool (opens in new tab)">
+                            <span class="resource-icon">✅</span>
+                            <div class="resource-text">
+                                <span class="resource-name">Can I Vote?</span>
+                                <span class="resource-desc">Check Your Status</span>
+                            </div>
+                            <span class="resource-arrow">↗</span>
+                        </a>
                     </div>
                 </div>
 
-                <!-- Contact and help section -->
-                <div class="help-section" role="complementary" aria-labelledby="help-heading">
-                    <h3 id="help-heading">Need Help?</h3>
-                    <p>For official election information, visit your state or local election office website.</p>
-                    <p>
-                        <a href="#" aria-label="Open help documentation">View Help</a> | 
-                        <a href="#" aria-label="Report a problem with the assistant">Report Issue</a>
-                    </p>
+                <!-- Stats card -->
+                <div class="sidebar-card stats-card">
+                    <h2 class="sidebar-title">Session Stats</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number" id="questions-count">0</span>
+                            <span class="stat-label">Questions</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="topics-count">0</span>
+                            <span class="stat-label">Topics</span>
+                        </div>
+                    </div>
                 </div>
             </aside>
+
         </div>
     </main>
 
-    <!-- Page footer -->
-    <footer role="contentinfo" class="footer">
-        <div class="container">
-            <p>&copy; 2024 Election Assistant. All rights reserved.</p>
+    <!-- Footer -->
+    <footer class="app-footer" role="contentinfo">
+        <div class="footer-inner">
+            <span>© 2024 Election Assistant. Non-partisan voter information tool.</span>
             <nav aria-label="Footer links">
-                <a href="#" aria-label="Privacy policy">Privacy</a> | 
-                <a href="#" aria-label="Terms of service">Terms</a> | 
-                <a href="#" aria-label="Accessibility statement">Accessibility</a>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Accessibility</a>
             </nav>
         </div>
     </footer>
 
-    <script src="/static/script.js" async></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
