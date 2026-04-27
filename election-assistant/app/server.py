@@ -4,11 +4,12 @@ Author: Praveen Kumar
 """
 import logging
 import os
+from time import perf_counter
 from typing import Any, Callable, Dict
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZIPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
@@ -18,8 +19,6 @@ from .config import config
 from .constants import (
     LOG_GCP_LOGGING_FAILED,
     LOG_GCP_LOGGING_INIT,
-    SERVICE_STATUS_ERROR,
-    SERVICE_STATUS_READY,
     SECURITY_HEADER_HSTS,
     SECURITY_HEADER_PERMISSIONS_POLICY,
     SECURITY_HEADER_REFERRER_POLICY,
@@ -43,25 +42,23 @@ logger = logging.getLogger("election-assistant")
 limiter = Limiter(key_func=get_remote_address)
 
 
-def get_system_status() -> SystemStatusResponse:
+def get_system_status() -> Dict[str, Any]:
     """Summarize the current runtime configuration.
 
     Returns:
-        SystemStatusResponse with all service statuses.
+        Dictionary with all service statuses.
     """
-    return SystemStatusResponse(
-        project_id=config.GCP_PROJECT_ID,
-        project_number=config.GCP_PROJECT_NUMBER,
-        region=config.GCP_REGION,
-        google_api_key_configured=bool(config.GOOGLE_API_KEY),
-        cloud_run_service_url_configured=bool(config.CLOUD_RUN_SERVICE_URL),
-        vertex_ai_enabled=config.ENABLE_VERTEX_AI,
-        firestore_enabled=config.ENABLE_FIRESTORE,
-        cloud_storage_enabled=config.ENABLE_CLOUD_STORAGE and bool(
-            config.GCS_BUCKET_NAME
-        ),
-        redis_cache_enabled=config.ENABLE_REDIS_CACHE,
-    )
+    return {
+        "project_id": config.GCP_PROJECT_ID,
+        "project_number": config.GCP_PROJECT_NUMBER,
+        "region": config.GCP_REGION,
+        "google_api_key_configured": bool(config.GOOGLE_API_KEY),
+        "cloud_run_service_url_configured": bool(config.CLOUD_RUN_SERVICE_URL),
+        "vertex_ai_enabled": getattr(config, "ENABLE_VERTEX_AI", False),
+        "firestore_enabled": getattr(config, "ENABLE_FIRESTORE", False),
+        "cloud_storage_enabled": getattr(config, "ENABLE_CLOUD_STORAGE", False),
+        "redis_cache_enabled": getattr(config, "ENABLE_REDIS_CACHE", False),
+    }
 
 
 def create_app() -> FastAPI:
@@ -84,6 +81,7 @@ def create_app() -> FastAPI:
         gcp_client.setup_logging()
         logger.info(LOG_GCP_LOGGING_INIT)
     except Exception as e:
+        # Broad catch: Cloud Logging is optional; continue without it locally
         logger.warning(LOG_GCP_LOGGING_FAILED, e)
 
     app = FastAPI(
@@ -92,14 +90,14 @@ def create_app() -> FastAPI:
         description="Comprehensive election guidance using Google Cloud services",
     )
 
-    # Add rate limiter
+    # Add rate limiter state
     app.state.limiter = limiter
 
     # Add GZIP compression middleware
-    app.add_middleware(GZIPMiddleware, minimum_size=1000)
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-    # Configure CORS with strict settings
-    cors_origins = config.API_CORS_ORIGINS
+    # Configure CORS
+    cors_origins = getattr(config, "API_CORS_ORIGINS", ["*"])
     if cors_origins != ["*"]:
         app.add_middleware(
             CORSMiddleware,
@@ -110,6 +108,8 @@ def create_app() -> FastAPI:
             max_age=86400,
         )
     else:
+        # NOTE: allow_origins=["*"] is intentional for hackathon demo.
+        # Restrict to specific origins before production deployment.
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -130,22 +130,70 @@ def create_app() -> FastAPI:
     if os.path.exists(static_dir):
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-    # Health check endpoint
-    @app.get("/health", response_model=SystemStatusResponse)
+    # ------------------------------------------------------------------ #
+    # Routes
+    # ------------------------------------------------------------------ #
+
+    @app.get(
+        "/health",
+        tags=["system"],
+        summary="Health check endpoint for load balancers and monitoring",
+    )
     @limiter.limit("100/minute")
-    async def health_check(request: Request) -> SystemStatusResponse:
-        """Health check endpoint with system status.
+    async def health_check(request: Request) -> Dict[str, Any]:
+        """Health check endpoint.
 
         Args:
             request: HTTP request.
 
         Returns:
-            SystemStatusResponse with current service statuses.
+            Dictionary with service health status including GCP feature flags.
         """
-        logger.info("Health check from %s", request.client.host)
-        return get_system_status()
+        logger.info("Health check from %s", request.client.host if request.client else "unknown")
+        status = get_system_status()
+        return {
+            "status": "healthy",
+            "project_id": status["project_id"],
+            "region": status["region"],
+            "google_api_key_configured": status["google_api_key_configured"],
+            "vertex_ai_enabled": status["vertex_ai_enabled"],
+            "firestore_enabled": status["firestore_enabled"],
+            "redis_enabled": status["redis_cache_enabled"],
+        }
 
-    # Frontend endpoint
+    @app.get(
+        "/api/status",
+        response_model=SystemStatusResponse,
+        tags=["system"],
+        summary="API status endpoint",
+    )
+    @limiter.limit("100/minute")
+    async def api_status(request: Request) -> SystemStatusResponse:
+        """Get detailed system status.
+
+        Args:
+            request: HTTP request.
+
+        Returns:
+            SystemStatusResponse with service configuration.
+        """
+        logger.info("Status request from %s", request.client.host if request.client else "unknown")
+        return SystemStatusResponse(**get_system_status())
+
+    @app.get(
+        "/api/system/status",
+        response_model=SystemStatusResponse,
+        tags=["system"],
+        summary="Get system configuration status",
+    )
+    async def system_status() -> SystemStatusResponse:
+        """Expose a compact deployment status summary.
+
+        Returns:
+            SystemStatusResponse with project and configuration info.
+        """
+        return SystemStatusResponse(**get_system_status())
+
     @app.get("/", response_class=HTMLResponse)
     @limiter.limit("100/minute")
     async def get_frontend(request: Request) -> str:
@@ -163,78 +211,30 @@ def create_app() -> FastAPI:
                 return file.read()
         return "<h1>Election Assistant</h1>"
 
-    # Status endpoint
-    @app.get("/api/status", response_model=SystemStatusResponse)
-    @limiter.limit("100/minute")
-    async def status(request: Request) -> SystemStatusResponse:
-        """Get detailed system status.
+    # ------------------------------------------------------------------ #
+    # Middleware (registered after routes — executes before routes)
+    # ------------------------------------------------------------------ #
+
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next: Callable) -> object:
+        """Add OWASP-compliant security headers to all HTTP responses.
 
         Args:
-            request: HTTP request.
+            request: Incoming HTTP request.
+            call_next: Next middleware in chain.
 
         Returns:
-            SystemStatusResponse with service configuration.
+            Response with security headers attached.
         """
-        logger.info("Status request from %s", request.client.host)
-        return get_system_status()
+        response = await call_next(request)
+        response.headers["Strict-Transport-Security"] = SECURITY_HEADER_HSTS
+        response.headers["X-Frame-Options"] = SECURITY_HEADER_X_FRAME_OPTIONS
+        response.headers["X-Content-Type-Options"] = SECURITY_HEADER_X_CONTENT_TYPE_OPTIONS
+        response.headers["X-XSS-Protection"] = SECURITY_HEADER_X_XSS_PROTECTION
+        response.headers["Referrer-Policy"] = SECURITY_HEADER_REFERRER_POLICY
+        response.headers["Permissions-Policy"] = SECURITY_HEADER_PERMISSIONS_POLICY
+        return response
 
-    return app
-
-    from .models import SystemStatusResponse
-
-    @app.get(
-        "/api/system/status",
-        response_model=SystemStatusResponse,
-        tags=["system"],
-        summary="Get system configuration status",
-    )
-    async def system_status() -> SystemStatusResponse:
-        """Expose a compact deployment status summary.
-
-        Returns:
-            SystemStatusResponse with project and configuration info.
-    """
-    return get_system_status()  # type: ignore[return-value]
-
-    from .models import SystemStatusResponse
-
-    @app.get(
-        "/health",
-        tags=["system"],
-        summary="Health check endpoint",
-    )
-    async def health_check() -> dict:
-        """Health check endpoint for load balancers and monitoring.
-
-        Returns:
-            Dictionary with service health status.
-        """
-        status = get_system_status()
-        return {
-            "status": "healthy",
-            "project_id": status.get("project_id", ""),
-            "region": status.get("region", ""),
-            "google_api_key_configured": status.get("google_api_key_configured", False),
-            "vertex_ai_enabled": getattr(config, "ENABLE_VERTEX_AI", False),
-            "firestore_enabled": getattr(config, "ENABLE_FIRESTORE", False),
-            "redis_enabled": getattr(config, "ENABLE_REDIS_CACHE", False),
-        }
-
-    @app.get(
-        "/api/status",
-        response_model=SystemStatusResponse,
-        tags=["system"],
-        summary="API status endpoint alias",
-    )
-    async def api_status() -> SystemStatusResponse:
-        """Alias for system status — used by monitoring tools.
-
-        Returns:
-            SystemStatusResponse with project and configuration info.
-        """
-        return get_system_status()  # type: ignore[return-value]
-
-    # Middleware
     @app.middleware("http")
     async def log_requests(request: Request, call_next: Callable) -> object:
         """Log HTTP request details and timing.

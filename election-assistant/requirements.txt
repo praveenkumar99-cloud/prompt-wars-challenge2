@@ -2,7 +2,6 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 google-generativeai==0.3.0
 google-cloud-aiplatform==1.38.0
-google-cloud-vertexai==0.45.0
 pydantic==2.5.0
 python-dotenv==1.0.0
 pytest==7.4.3
@@ -25,4 +24,3 @@ mypy==1.7.1
 flake8==6.1.0
 pre-commit==3.5.0
 requests==2.31.0
-google-cloud-civic==0.2.0

@@ -38,11 +38,6 @@ function setupEventListeners() {
         chatForm.addEventListener('submit', handleFormSubmit);
     }
 
-    const voiceBtn = document.getElementById('voice-input-btn');
-    if (voiceBtn) {
-        voiceBtn.addEventListener('click', toggleVoiceInput);
-    }
-
     const printBtn = document.getElementById('print-btn');
     if (printBtn) {
         printBtn.addEventListener('click', printConversation);
@@ -264,7 +259,7 @@ function handleSuggestionKeydown(event) {
 const voiceBtn = document.getElementById('voice-input-btn');
 const chatInput = document.getElementById('user-input');
 
-if (voiceBtn && 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+if (voiceBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
