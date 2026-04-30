@@ -72,6 +72,6 @@ async def get_step(
     }
 
     if step_id not in steps_map:
-        raise HTTPException(404, f"Step {step_id} not found")
+        raise HTTPException(404, "Step '%s' not found" % step_id)
 
     return steps_map[step_id]

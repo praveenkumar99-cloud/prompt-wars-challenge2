@@ -4,6 +4,7 @@ Author: Praveen Kumar
 """
 import hashlib
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 
 from ..config import config
@@ -24,6 +25,11 @@ from .gemini_service import GeminiService
 from .intent_service import IntentService
 from .timeline_service import TimelineService
 from .vertex_ai_service import VertexAIService
+
+try:
+    from google.cloud import firestore as firestore_client
+except ImportError:
+    firestore_client = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -48,15 +54,26 @@ class AssistantService:
         self.timeline_service: TimelineService = TimelineService()
         self.cache_service: CacheService = CacheService()
         self.audit_service: AuditService = AuditService()
-        self.conversation_history = {}  # Store last 5 messages per session
+        self.conversation_history: Dict[str, List[Dict[str, str]]] = {}  # Store last 5 messages per session
 
     def get_conversation_context(self, session_id: str) -> str:
-        """Get recent conversation history for context"""
+        """Get recent conversation history as formatted context string.
+
+        Retrieves the last 3 exchanges for a given session and formats
+        them as a readable conversation string for LLM context injection.
+
+        Args:
+            session_id: Unique session identifier.
+
+        Returns:
+            Formatted conversation history string, or empty string
+            if no history exists for the session.
+        """
         if session_id not in self.conversation_history:
             return ""
         history = self.conversation_history[session_id][-3:]  # Last 3 exchanges
-        context = "\n".join([f"User: {h['user']}\nAssistant: {h['assistant']}" for h in history])
-        return f"Previous conversation:\n{context}\n\n"
+        context = "\n".join(["User: %s\nAssistant: %s" % (h["user"], h["assistant"]) for h in history])
+        return "Previous conversation:\n%s\n\n" % context
 
     async def process_message(
         self,
@@ -78,7 +95,6 @@ class AssistantService:
             Exception: On critical processing failures (propagated to route handler).
         """
         if not session_id:
-            import uuid
             session_id = str(uuid.uuid4())
 
         # Get conversation context
@@ -157,21 +173,22 @@ class AssistantService:
         # Step 6: Persist session to Firestore
         if config.ENABLE_FIRESTORE and session_id:
             try:
-                from google.cloud import firestore
-
-                db = firestore.Client(project=config.GCP_PROJECT_ID)
-                db.collection(config.FIRESTORE_COLLECTION).document(session_id).set(
-                    {
-                        "message": message,
-                        "intent": intent,
-                        "response": response_text[:500],  # Truncate for storage
-                        "language": language,
-                        "confidence": confidence,
-                        "timestamp": firestore.SERVER_TIMESTAMP,
-                    },
-                    merge=True,
-                )
-                logger.debug("Session persisted to Firestore: %s", session_id)
+                if firestore_client is None:
+                    logger.warning("Firestore client not available")
+                else:
+                    db = firestore_client.Client(project=config.GCP_PROJECT_ID)
+                    db.collection(config.FIRESTORE_COLLECTION).document(session_id).set(
+                        {
+                            "message": message,
+                            "intent": intent,
+                            "response": response_text[:500],
+                            "language": language,
+                            "confidence": confidence,
+                            "timestamp": firestore_client.SERVER_TIMESTAMP,
+                        },
+                        merge=True,
+                    )
+                    logger.debug("Session persisted to Firestore: %s", session_id)
             except Exception as e:
                 logger.warning("Firestore write failed: %s", e)
 
@@ -238,13 +255,11 @@ class AssistantService:
                 "where_to_find": "Voter registration card or state election website",
                 "typical_hours": "7 AM - 7 PM",
                 "what_to_bring": "ID (requirements vary) and voter registration card",
+                "civic_api": "Use Google Civic API for location data",
             },
             INTENT_CANDIDATES: {
                 "where_to_find": "State election website for sample ballot",
                 "research_tools": ["Ballotpedia", "Vote411", "league of women voters"],
-            },
-            INTENT_POLLING_LOCATIONS: {
-                "civic_api": "Use Google Civic API for location data"
             },
             INTENT_GENERAL: {
                 "help_topics": [
