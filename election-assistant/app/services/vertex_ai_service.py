@@ -79,7 +79,7 @@ class VertexAIService:
             %s
 
             Output ONLY JSON: {"intent": "category", "confidence": 0.0-1.0}
-            """ % (message, f"Context: {context}" if context else "")
+            """ % (message, ("Context: %s" % context) if context else "")
 
             response = self._client.generate_content(prompt)
             raw = response.text.strip()
