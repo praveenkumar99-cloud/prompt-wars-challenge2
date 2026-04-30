@@ -249,8 +249,7 @@ def create_app() -> FastAPI:
         start_time = perf_counter()
         response = await call_next(request)
         process_time = perf_counter() - start_time
-        if getattr(config, "DEBUG", False):
-            response.headers["x-process-time"] = "%.6f" % process_time
+        response.headers["x-process-time"] = f"{process_time:.6f}"
         logger.info(
             {
                 "method": request.method,
