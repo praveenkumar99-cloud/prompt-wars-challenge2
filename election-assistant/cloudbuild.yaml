@@ -17,7 +17,7 @@ steps:
       - '--cpu=1'
       - '--min-instances=0'
       - '--max-instances=10'
-      - '--set-env-vars=GCP_PROJECT_ID=praveen-space,GCP_REGION=us-central1,VERTEX_AI_LOCATION=us-central1,ENABLE_VERTEX_AI=true,ENABLE_FIRESTORE=false,ENABLE_CLOUD_STORAGE=false,ENABLE_REDIS_CACHE=false,ENABLE_AUDIT_LOGGING=false'
+      - '--set-env-vars=GCP_PROJECT_ID=praveen-space,GCP_REGION=us-central1,VERTEX_AI_LOCATION=us-central1,ENABLE_VERTEX_AI=true,ENABLE_FIRESTORE=true,ENABLE_CLOUD_STORAGE=true,ENABLE_REDIS_CACHE=false,ENABLE_AUDIT_LOGGING=true'
       - '--set-secrets=GOOGLE_API_KEY=election-assistant-gemini-api-key:latest'
 images:
   - 'gcr.io/praveen-space/election-assistant'
