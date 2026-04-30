@@ -101,7 +101,7 @@ class AssistantService:
         context = self.get_conversation_context(session_id)
 
         # Enhance prompt with context
-        enhanced_message = f"{context}User question: {message}"
+        enhanced_message = "%sUser question: %s" % (context, message)
 
         logger.info(
             "Processing message (lang=%s, session=%s): %s...",

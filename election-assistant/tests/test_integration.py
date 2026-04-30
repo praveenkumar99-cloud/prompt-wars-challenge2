@@ -382,6 +382,51 @@ class TestSecurityHeaders:
         hsts = response.headers.get("Strict-Transport-Security")
         assert "max-age=" in hsts if hsts else False
 
+    def test_x_content_type_options_header(self, client):
+        """Test X-Content-Type-Options header prevents MIME sniffing.
+
+        Args:
+            client: FastAPI test client fixture.
+        """
+        response = client.get("/")
+        assert "X-Content-Type-Options" in response.headers
+        assert response.headers["X-Content-Type-Options"] == "nosniff"
+
+    def test_x_xss_protection_header(self, client):
+        """Test X-XSS-Protection header is set correctly.
+
+        Args:
+            client: FastAPI test client fixture.
+        """
+        response = client.get("/")
+        assert "X-XSS-Protection" in response.headers
+        assert "1" in response.headers["X-XSS-Protection"]
+
+    def test_x_frame_options_value(self, client):
+        """Test X-Frame-Options header prevents clickjacking.
+
+        Args:
+            client: FastAPI test client fixture.
+        """
+        response = client.get("/")
+        assert "X-Frame-Options" in response.headers
+        assert response.headers["X-Frame-Options"] == "DENY"
+
+    def test_system_status_endpoint_shape(self, client):
+        """Test /api/system/status returns expected response shape.
+
+        Args:
+            client: FastAPI test client fixture.
+        """
+        response = client.get("/api/system/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "project_id" in data
+        assert "region" in data
+        assert "google_api_key_configured" in data
+        assert "vertex_ai_enabled" in data
+        assert "firestore_enabled" in data
+
 
 class TestLoadHandling:
     """Tests for load and performance."""

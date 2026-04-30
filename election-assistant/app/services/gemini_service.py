@@ -56,21 +56,19 @@ class GeminiService:
         """
         client = self._get_client()
 
-        prompt = f"""
-        Classify the user's election-related question into one of these categories:
-        - registration: Questions about registering to vote
-        - deadlines: Questions about election dates and deadlines
-        - voting_methods: Questions about how to vote (mail, early, in-person)
-        - requirements: Questions about voter ID, eligibility, documents
-        - polling_locations: Questions about where to vote
-        - candidates: Questions about candidates or ballot measures
-        - general: Other election-related questions
-
-        Conversation Context: {context}
-        Message: "{message}"
-
-        Output ONLY JSON: {{"intent": "category", "confidence": 0.0-1.0}}
-        """
+        prompt = (
+            "Classify the user's election-related question into one of these categories:\n"
+            "- registration: Questions about registering to vote\n"
+            "- deadlines: Questions about election dates and deadlines\n"
+            "- voting_methods: Questions about how to vote (mail, early, in-person)\n"
+            "- requirements: Questions about voter ID, eligibility, documents\n"
+            "- polling_locations: Questions about where to vote\n"
+            "- candidates: Questions about candidates or ballot measures\n"
+            "- general: Other election-related questions\n\n"
+            "Conversation Context: %s\n"
+            'Message: "%s"\n\n'
+            'Output ONLY JSON: {"intent": "category", "confidence": 0.0-1.0}'
+        ) % (context, message)
 
         try:
             response = client.generate_content(prompt)
@@ -104,24 +102,23 @@ class GeminiService:
         """
         client = self._get_client()
 
-        prompt = f"""
-        You are a helpful, non-partisan election assistant. Provide clear, accurate information.
-
-        Conversation Context: {conversation_context}
-        User Question: {message}
-        Intent Category: {intent}
-        Available Information: {json.dumps(context)}
-
-        Guidelines:
-        1. Be factual and unbiased
-        2. Note when rules vary by state
-        3. Suggest specific next steps
-        4. Keep response conversational but informative
-        5. Do not express political opinions
-        6. Use the conversation context to provide more specific, follow-up answers
-
-        Generate a helpful response:
-        """
+        prompt = (
+            "You are a helpful, non-partisan election assistant. "
+            "Provide clear, accurate information.\n\n"
+            "Conversation Context: %s\n"
+            "User Question: %s\n"
+            "Intent Category: %s\n"
+            "Available Information: %s\n\n"
+            "Guidelines:\n"
+            "1. Be factual and unbiased\n"
+            "2. Note when rules vary by state\n"
+            "3. Suggest specific next steps\n"
+            "4. Keep response conversational but informative\n"
+            "5. Do not express political opinions\n"
+            "6. Use the conversation context to provide more specific, "
+            "follow-up answers\n\n"
+            "Generate a helpful response:"
+        ) % (conversation_context, message, intent, json.dumps(context))
 
         try:
             response = client.generate_content(prompt)
