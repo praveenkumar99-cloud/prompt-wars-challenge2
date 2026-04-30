@@ -7,7 +7,7 @@ The Election Assistant is an AI-powered civic information tool that helps citize
 ## Tech Stack
 
 - **FastAPI** - Modern Python web framework for API development
-- **Google Gemini 1.5 Pro** - LLM for natural language understanding and response generation
+- **Google Gemini 2.5 Pro** - LLM for natural language understanding and response generation
 - **Google Cloud Platform** - Cloud Run for deployment, Firestore for session persistence
 - **Google Cloud Logging** - Structured logging and monitoring
 - **Pydantic** - Data validation and serialization
@@ -52,7 +52,7 @@ The application will be available at `http://localhost:8000`.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GOOGLE_API_KEY` | Your Gemini API key from Google AI Studio | *(required)* |
-| `GEMINI_MODEL` | Model to use for responses | `gemini-1.5-pro` |
+| `GEMINI_MODEL` | Model to use for responses | `gemini-2.5-pro` |
 | `GCP_PROJECT_ID` | Your GCP project ID | `praveen-space` |
 | `GCP_PROJECT_NUMBER` | Your GCP project number | `665822784067` |
 | `GCP_REGION` | Region for Cloud Run deployment | `us-central1` |
