@@ -2,6 +2,9 @@
 Description: Intent classification and routing service.
 Author: Praveen Kumar
 """
+__all__ = ["IntentService"]
+
+import asyncio
 import logging
 from typing import List, Tuple
 
@@ -18,6 +21,9 @@ from .gemini_service import GeminiService
 
 logger = logging.getLogger(__name__)
 
+# Timeout for intent classification (seconds)
+INTENT_TIMEOUT = 5
+
 
 class IntentService:
     """Service for classifying and routing user intents."""
@@ -26,8 +32,8 @@ class IntentService:
         """Initialize IntentService with GeminiService instance."""
         self.gemini_service = GeminiService()
 
-    def classify(self, message: str, context: str = "") -> Tuple[str, float]:
-        """Classify user intent using LLM with keyword fallback.
+    async def classify(self, message: str, context: str = "") -> Tuple[str, float]:
+        """Classify user intent using LLM with keyword fallback (async).
 
         Args:
             message: User's question text.
@@ -39,17 +45,23 @@ class IntentService:
             or confidence is too low.
         """
         if self.gemini_service.api_key:
-            intent, confidence = self.gemini_service.understand_intent(message, context)
-            keyword_intent = self._keyword_classify(message)
+            try:
+                intent, confidence = await asyncio.wait_for(
+                    self.gemini_service.understand_intent_async(message, context),
+                    timeout=INTENT_TIMEOUT
+                )
+                keyword_intent = self._keyword_classify(message)
 
-            # Recover from weak or failed LLM classification so the assistant
-            # still answers obvious questions with the right intent.
-            if intent == INTENT_GENERAL and keyword_intent != INTENT_GENERAL:
-                return keyword_intent, 0.65
-            if confidence < 0.55 and keyword_intent != INTENT_GENERAL:
-                return keyword_intent, 0.65
+                # Recover from weak or failed LLM classification
+                if intent == INTENT_GENERAL and keyword_intent != INTENT_GENERAL:
+                    return keyword_intent, 0.65
+                if confidence < 0.55 and keyword_intent != INTENT_GENERAL:
+                    return keyword_intent, 0.65
 
-            return intent, confidence
+                return intent, confidence
+            except asyncio.TimeoutError:
+                logger.warning("Intent classification timed out, using keyword fallback")
+                return self._keyword_classify(message), 0.6
 
         # Fallback keyword-based classification
         return self._keyword_classify(message), 0.6

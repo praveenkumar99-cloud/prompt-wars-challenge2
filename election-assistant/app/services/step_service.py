@@ -2,6 +2,8 @@
 Description: Step-by-step election guidance service.
 Author: Praveen Kumar
 """
+__all__ = ["StepService"]
+
 from typing import List
 
 from ..constants import STEP_ID_MAIL_BALLOT, STEP_ID_REGISTER, STEP_ID_VOTE

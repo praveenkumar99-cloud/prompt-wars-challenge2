@@ -9,4 +9,8 @@ __all__ = [
     "TimelineService",
     "StepService",
     "AssistantService",
+    "CacheService",
+    "AuditService",
+    "CloudStorageService",
+    "VertexAIService",
 ]

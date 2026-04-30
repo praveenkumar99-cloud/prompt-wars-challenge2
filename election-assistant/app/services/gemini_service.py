@@ -2,6 +2,9 @@
 Description: Gemini LLM integration for election assistance.
 Author: Praveen Kumar
 """
+__all__ = ["GeminiService"]
+
+import asyncio
 import json
 import logging
 from typing import Optional, Tuple
@@ -9,6 +12,9 @@ from typing import Optional, Tuple
 from ..config import config
 
 logger = logging.getLogger(__name__)
+
+# Timeout for LLM API calls (seconds)
+LLM_TIMEOUT = 8
 
 
 class GeminiService:
@@ -126,6 +132,46 @@ class GeminiService:
         except Exception as e:
             # Broad catch because Gemini library may raise various exceptions (network, auth, quota, etc.)
             logger.error("Response generation failed: %s", e)
+            return self._get_fallback_response(intent)
+
+    async def understand_intent_async(self, message: str, context: str = "") -> Tuple[str, float]:
+        """Async wrapper for intent classification with timeout.
+
+        Args:
+            message: User's question text.
+            context: Previous conversation context.
+
+        Returns:
+            Tuple of (intent_category, confidence_score).
+        """
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self.understand_intent, message, context),
+                timeout=LLM_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Gemini intent classification timed out after %ds", LLM_TIMEOUT)
+            return "general", 0.5
+
+    async def generate_response_async(self, message: str, intent: str, context: dict, conversation_context: str = "") -> str:
+        """Async wrapper for response generation with timeout.
+
+        Args:
+            message: User's original question.
+            intent: Classified intent category.
+            context: Relevant context information for the intent.
+            conversation_context: Previous conversation history.
+
+        Returns:
+            Generated response text, or fallback response on error/timeout.
+        """
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self.generate_response, message, intent, context, conversation_context),
+                timeout=LLM_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Gemini response generation timed out after %ds", LLM_TIMEOUT)
             return self._get_fallback_response(intent)
 
     def _get_fallback_response(self, intent: str) -> str:

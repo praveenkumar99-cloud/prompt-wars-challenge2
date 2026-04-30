@@ -2,6 +2,8 @@
 Description: Redis caching layer for high-performance data retrieval.
 Author: Praveen Kumar
 """
+__all__ = ["CacheService"]
+
 import json
 import logging
 from typing import Any, Optional

@@ -2,6 +2,9 @@
 Description: Main election assistant orchestrator with Vertex AI and multi-service integration.
 Author: Praveen Kumar
 """
+__all__ = ["AssistantService"]
+
+import asyncio
 import hashlib
 import logging
 import uuid
@@ -121,7 +124,7 @@ class AssistantService:
             logger.debug("Using cached intent classification")
         else:
             try:
-                intent, confidence = self.intent_service.classify(enhanced_message, context)
+                intent, confidence = await self.intent_service.classify(enhanced_message, context)
                 # Cache the result
                 self.cache_service.set_intent_result(message_hash, intent, confidence)
             except Exception as e:
@@ -138,19 +141,26 @@ class AssistantService:
         try:
             if config.ENABLE_VERTEX_AI and self.vertex_ai_service._initialize_client():
                 logger.debug("Using Vertex AI for response generation")
-                response_text = (
-                    self.vertex_ai_service.generate_response_advanced(
+                response_text = await asyncio.wait_for(
+                    self.vertex_ai_service.generate_response_advanced_async(
                         enhanced_message, intent, intent_context
-                    )
+                    ),
+                    timeout=10  # 10 second timeout for response generation
                 )
             elif self.gemini_service.api_key:
                 logger.debug("Using Gemini for response generation")
-                response_text = self.gemini_service.generate_response(
-                    enhanced_message, intent, intent_context, context
+                response_text = await asyncio.wait_for(
+                    self.gemini_service.generate_response_async(
+                        enhanced_message, intent, intent_context, context
+                    ),
+                    timeout=10  # 10 second timeout
                 )
             else:
                 logger.debug("Using template response")
                 response_text = self._get_template_response(intent, intent_context)
+        except asyncio.TimeoutError:
+            logger.warning("Response generation timed out, using template fallback")
+            response_text = self._get_template_response(intent, intent_context)
         except Exception as e:
             logger.error(LOG_RESPONSE_GENERATION_FAILED, e)
             response_text = self._get_template_response(intent, context)
@@ -158,11 +168,15 @@ class AssistantService:
         # Step 4: Get follow-up suggestions
         try:
             if config.ENABLE_VERTEX_AI:
-                follow_ups = (
-                    self.vertex_ai_service.generate_follow_ups_advanced(intent)
+                follow_ups = await asyncio.wait_for(
+                    self.vertex_ai_service.generate_follow_ups_advanced_async(intent),
+                    timeout=5  # 5 second timeout for follow-ups
                 )
             else:
                 follow_ups = self.intent_service.get_follow_up_suggestions(intent)
+        except asyncio.TimeoutError:
+            logger.warning("Follow-up generation timed out, using default suggestions")
+            follow_ups = self.intent_service.get_follow_up_suggestions(intent)
         except Exception as e:
             logger.warning("Follow-up generation failed: %s", e)
             follow_ups = self.intent_service.get_follow_up_suggestions(intent)
@@ -170,25 +184,30 @@ class AssistantService:
         # Step 5: Get sources
         sources = self._get_sources(intent)
 
-        # Step 6: Persist session to Firestore
+        # Step 6: Persist session to Firestore (async, non-blocking)
         if config.ENABLE_FIRESTORE and session_id:
             try:
                 if firestore_client is None:
                     logger.warning("Firestore client not available")
                 else:
-                    db = firestore_client.Client(project=config.GCP_PROJECT_ID)
-                    db.collection(config.FIRESTORE_COLLECTION).document(session_id).set(
-                        {
-                            "message": message,
-                            "intent": intent,
-                            "response": response_text[:500],
-                            "language": language,
-                            "confidence": confidence,
-                            "timestamp": firestore_client.SERVER_TIMESTAMP,
-                        },
-                        merge=True,
-                    )
-                    logger.debug("Session persisted to Firestore: %s", session_id)
+                    # Run Firestore write in background with timeout to avoid blocking response
+                    async def firestore_write():
+                        db = firestore_client.Client(project=config.GCP_PROJECT_ID)
+                        db.collection(config.FIRESTORE_COLLECTION).document(session_id).set(
+                            {
+                                "message": message,
+                                "intent": intent,
+                                "response": response_text[:500],
+                                "language": language,
+                                "confidence": confidence,
+                                "timestamp": firestore_client.SERVER_TIMESTAMP,
+                            },
+                            merge=True,
+                        )
+                        logger.debug("Session persisted to Firestore: %s", session_id)
+                    
+                    # Fire and forget with a short timeout
+                    asyncio.create_task(asyncio.wait_for(firestore_write(), timeout=5))
             except Exception as e:
                 logger.warning("Firestore write failed: %s", e)
 

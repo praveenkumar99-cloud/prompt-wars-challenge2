@@ -2,6 +2,9 @@
 Description: Vertex AI SDK integration for enhanced generative capabilities.
 Author: Praveen Kumar
 """
+__all__ = ["VertexAIService"]
+
+import asyncio
 import json
 import logging
 from typing import Optional, Tuple
@@ -9,6 +12,9 @@ from typing import Optional, Tuple
 from ..config import config
 
 logger = logging.getLogger(__name__)
+
+# Timeout for Vertex AI API calls (seconds)
+VERTEX_AI_TIMEOUT = 10
 
 
 class VertexAIService:
@@ -167,6 +173,67 @@ class VertexAIService:
 
         except Exception as e:
             logger.warning("Vertex AI follow-up generation failed: %s", e)
+            return []
+
+    async def understand_intent_advanced_async(
+        self, message: str, context: Optional[str] = None
+    ) -> Tuple[str, float]:
+        """Async wrapper for intent classification with timeout.
+
+        Args:
+            message: User's question text.
+            context: Optional conversation context.
+
+        Returns:
+            Tuple of (intent_category, confidence_score).
+        """
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self.understand_intent_advanced, message, context),
+                timeout=VERTEX_AI_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Vertex AI intent classification timed out after %ds", VERTEX_AI_TIMEOUT)
+            return "general", 0.5
+
+    async def generate_response_advanced_async(
+        self, message: str, intent: str, context: dict
+    ) -> str:
+        """Async wrapper for response generation with timeout.
+
+        Args:
+            message: User's original question.
+            intent: Classified intent category.
+            context: Relevant context information.
+
+        Returns:
+            Generated response text, or fallback on error/timeout.
+        """
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self.generate_response_advanced, message, intent, context),
+                timeout=VERTEX_AI_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Vertex AI response generation timed out after %ds", VERTEX_AI_TIMEOUT)
+            return "I apologize, but I'm unable to generate a response at this time."
+
+    async def generate_follow_ups_advanced_async(self, intent: str) -> list:
+        """Async wrapper for follow-up generation with timeout.
+
+        Args:
+            intent: Current conversation intent.
+
+        Returns:
+            List of follow-up question suggestions.
+        """
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self.generate_follow_ups_advanced, intent),
+                timeout=VERTEX_AI_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Vertex AI follow-up generation timed out after %ds", VERTEX_AI_TIMEOUT)
             return []
 
     def batch_process_messages(

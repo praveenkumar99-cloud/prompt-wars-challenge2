@@ -19,9 +19,7 @@ class ChatRequest(BaseModel):
 
     message: str = Field(
         ...,
-        min_length=1,
-        max_length=500,
-        description="User's election-related question (1-500 characters)",
+        description="User's election-related question",
     )
     session_id: Optional[str] = Field(
         None, description="Unique session identifier for conversation tracking"

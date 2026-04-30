@@ -20,7 +20,7 @@ class TestTimelineService:
         upcoming = service.get_upcoming_events()
         assert len(upcoming) <= 3
         if upcoming:
-            assert upcoming[0]["event"] == "Primary Elections"
+            assert upcoming[0]["title"] == "Primary Elections"
 
     def test_deadline_info_structure(self) -> None:
         """Test that deadline info contains required keys."""

@@ -1,26 +1,15 @@
 """Module: audit_service.py
-Description: Comprehensive audit logging for compliance and security monitoring.
+Description: Audit logging service for compliance and tracking.
 Author: Praveen Kumar
 """
+__all__ = ["AuditService"]
+
+import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 from ..config import config
-from ..constants import (
-    AUDIT_ACTION_API_CALL,
-    AUDIT_ACTION_CHAT,
-    AUDIT_ACTION_ERROR,
-    AUDIT_ACTION_EXPORT,
-    AUDIT_ACTION_LOGIN,
-    FIRESTORE_COLLECTION_AUDIT_LOGS,
-    FIRESTORE_FIELD_ACTION,
-    FIRESTORE_FIELD_IP_ADDRESS,
-    FIRESTORE_FIELD_MESSAGE,
-    FIRESTORE_FIELD_STATUS,
-    FIRESTORE_FIELD_TIMESTAMP,
-    FIRESTORE_FIELD_USER_ID,
-)
 
 logger = logging.getLogger(__name__)
 

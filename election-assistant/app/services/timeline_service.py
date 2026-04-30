@@ -2,6 +2,8 @@
 Description: Election timeline information service.
 Author: Praveen Kumar
 """
+__all__ = ["TimelineService"]
+
 import json
 import logging
 import os
@@ -40,7 +42,17 @@ class TimelineService:
         Returns:
             List of election event dictionaries.
         """
-        return self.knowledge.get("important_dates_2024", [])
+        raw_events = self.knowledge.get("important_dates_2024", [])
+        formatted_events = []
+        for i, event in enumerate(raw_events):
+            formatted_events.append({
+                "event_id": f"event_{i+1}",
+                "title": event.get("event", ""),
+                "date": event.get("date") or event.get("date_range", ""),
+                "description": event.get("description", ""),
+                "is_deadline": "deadline" in event.get("event", "").lower() or "registration" in event.get("event", "").lower()
+            })
+        return formatted_events
 
     def get_upcoming_events(self, days_ahead: int = 30) -> List[Dict[str, Any]]:
         """Get the nearest election events.
